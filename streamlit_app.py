@@ -103,17 +103,27 @@ with col_left:
             # Hier deine save_entry Logik
             st.toast("Kreatin geloggt!", icon="⚡")
         
-        st.write("---")
-        new_weight = st.number_input("Körpergewicht (kg)", value=82.4, step=0.1)
+      # --- Gewichtsbereich ---
+        new_weight = st.number_input("Körpergewicht (kg)", value=82.4, step=0.1, format="%.1f")
+        
         if st.button("⚖️ Gewicht speichern", use_container_width=True):
-    # Alles hierunter MUSS eingerückt sein!
-    new_data = {
-        "Datum": str(date.today()),
-        "Typ": "Gewicht",
-        "Übung/Info": "Körpergewicht",
-        "Gewicht": new_weight, 
-        "Sätze": 0,
-        "Wiederholungen": 0
+            # Ab hier muss alles eingerückt sein
+            weight_entry = {
+                "Datum": str(date.today()),
+                "Typ": "Gewicht",
+                "Übung/Info": "Körpergewicht",
+                "Gewicht": new_weight,
+                "Sätze": 0,
+                "Wiederholungen": 0
+            }
+            
+            # Speicher-Funktion aufrufen
+            success = save_entry(weight_entry)
+            
+            if success:
+                st.toast(f"Erfolg: {new_weight} kg gespeichert!", icon="⚖️")
+                st.cache_data.clear() # Gedächtnis löschen
+                st.rerun() # Seite neu laden für die Metrik oben
     }
     # Zuerst Daten laden
 data = load_data()
@@ -183,6 +193,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
