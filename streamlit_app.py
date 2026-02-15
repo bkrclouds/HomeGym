@@ -17,17 +17,25 @@ def load_data():
 # Funktion zum Speichern eines neuen Eintrags
 def save_entry(new_row_dict):
     try:
-        # Bestehende Daten laden
-        existing_data = conn.read(ttl="10m")
-        # Neue Zeile hinzufügen
+        # Wir holen die Daten aus dem Cache (schnell!)
+        existing_data = load_data()
+        
+        # Neue Daten anhängen
         updated_df = pd.concat([existing_data, pd.DataFrame([new_row_dict])], ignore_index=True)
-        # Update abschicken
+        
+        # Einmaliger Schreibvorgang zu Google
         conn.update(data=updated_df)
-        # JETZT erst den Cache leeren, damit er beim nächsten Mal neu lädt
+        
+        # WICHTIG: Cache löschen, damit die Historie beim nächsten Mal aktuell ist
         st.cache_data.clear()
-        st.success("Erfolgreich gespeichert!")
+        
+        st.balloons()
+        st.success("Erfolgreich im Sheet gespeichert!")
     except Exception as e:
-        st.error(f"Fehler: {e}")
+        if "429" in str(e) or "quota" in str(e).lower():
+            st.error("Google braucht kurz Pause (Limit erreicht). Bitte in 1 Minute nochmal probieren!")
+        else:
+            st.error(f"Fehler: {e}")
 
 # --- UI DESIGN ---
 st.title("🏋️‍♂️ My HomeGym")
@@ -102,6 +110,7 @@ if not data.empty:
         st.line_chart(weight_df.set_index("Datum")["Gewicht"])
 else:
     st.info("Noch keine Daten vorhanden. Fang an zu trainieren!")
+
 
 
 
