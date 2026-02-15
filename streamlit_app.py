@@ -8,9 +8,6 @@ st.set_page_config(page_title="My Fitness Hub", page_icon="🏋️‍♂️", la
 
 # --- VERBINDUNG ZU GOOGLE SHEETS ---
 # Wir erstellen eine Verbindung zur Tabelle
-conn = st.connection("gsheets", type=GSheetsConnection)
-[connections.gsheets]
-spreadsheet = "https://docs.google.com/spreadsheets/d/1ougM0NIlwnMBzRUo5_aG36GQAiY3Gl7RhxHKPzd1msI/edit?usp=sharing"
 
 # Funktion zum Laden der Daten
 def load_data():
@@ -96,3 +93,4 @@ if not data.empty:
         st.line_chart(weight_df.set_index("Datum")["Gewicht"])
 else:
     st.info("Noch keine Daten vorhanden. Fang an zu trainieren!")
+
