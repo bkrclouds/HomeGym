@@ -7,6 +7,7 @@ st.set_page_config(page_title="Fitness Hub", layout="centered")
 
 # Verbindung zu Google Sheets
 conn = st.connection("gsheets", type=GSheetsConnection)
+spreadsheet -"https://docs.google.com/spreadsheets/d/1ougM0NIlwnMBzRUo5_aG36GQAiY3Gl7RhxHKPzd1msI/edit?usp=sharing"
 
 # Daten laden
 df = conn.read(ttl="0s") # ttl=0 sorgt für Echtzeit-Updates
