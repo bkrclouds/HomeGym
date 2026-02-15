@@ -60,7 +60,7 @@ if not data.empty:
         last_workout = trainings['Übung/Info'].iloc[-1]
 
 # --- 5. UI: HEADER & METRICS ---
-st.title("🦾 Iron Hub")
+st.title("🦾 HomeGym")
 m1, m2, m3 = st.columns(3)
 
 with m1:
@@ -83,31 +83,34 @@ with col_left:
         
         # KREATIN
         if st.button("💊 Kreatin eingenommen"):
-            success = save_entry({
-                "Datum": str(date.today()), "Typ": "Kreatin", 
-                "Übung/Info": "5g", "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0
-            })
-            if success:
-                st.balloons() # Ballons für Kreatin
-                st.toast("Kreatin geloggt!", icon="✅")
-                st.rerun()
+    success = save_entry({
+        "Datum": str(date.today()), "Typ": "Kreatin", 
+        "Übung/Info": "5g", "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0
+    })
+    if success:
+        st.balloons() # Jetzt werden sie abgefeuert
+        st.toast("Kreatin geloggt!", icon="✅")
+        time.sleep(2) # Wir warten 2 Sekunden, damit man die Ballons sieht
+        st.rerun()
 
         st.write("---")
         
         # GEWICHT
         new_w = st.number_input("Körpergewicht (kg)", value=float(last_weight) if last_weight > 0 else 80.0, step=0.1)
         if st.button("⚖️ Gewicht speichern"):
-            success = save_entry({
-                "Datum": str(date.today()), "Typ": "Gewicht", 
-                "Übung/Info": "Körpergewicht", "Gewicht": new_w, "Sätze": 0, "Wiederholungen": 0
-            })
-            if success:
-                if new_w < last_weight and last_weight > 0:
-                    st.snow() # "Herz"-Ersatz oder Snow für Abnahme (Streamlit hat kein Herz-Emoji-Regen, Snow passt gut)
-                    st.toast("Abgenommen! ❤️", icon="🔥")
-                else:
-                    st.toast("Gewicht gespeichert!", icon="⚖️")
-                st.rerun()
+    success = save_entry({
+        "Datum": str(date.today()), "Typ": "Gewicht", 
+        "Übung/Info": "Körpergewicht", "Gewicht": new_w, "Sätze": 0, "Wiederholungen": 0
+    })
+    if success:
+        if new_w < last_weight and last_weight > 0:
+            st.snow() # Der "Abnehm-Regen"
+            st.toast("Abgenommen! ❤️", icon="❤️")
+            time.sleep(2)
+        else:
+            st.toast("Gewicht gespeichert!", icon="⚖️")
+            time.sleep(1)
+        st.rerun()
 
 with col_right:
     with st.container(border=True):
@@ -121,18 +124,18 @@ with col_right:
         with c2: u_s = st.number_input("Sätze", step=1, key="w_s")
         with c3: u_r = st.number_input("Reps", step=1, key="w_r")
 
-        if st.button("🚀 Satz speichern"):
-            if u_name:
-                success = save_entry({
-                    "Datum": str(date.today()), "Typ": "Training", 
-                    "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r
-                })
-                if success:
-                    # Blitze simulieren wir mit einem Toast-Icon (da es keinen Blitz-Regen gibt)
-                    st.toast("BOOM! Training geloggt! ⚡", icon="⚡")
-                    st.rerun()
-            else:
-                st.warning("Bitte Übungsnamen eingeben!")
+       if st.button("🚀 Satz speichern"):
+    if u_name:
+        success = save_entry({
+            "Datum": str(date.today()), "Typ": "Training", 
+            "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r
+        })
+        if success:
+            # Da Streamlit keinen Blitz-Regen hat, machen wir hier etwas Cooles:
+            st.success("⚡ POWER! Satz gespeichert!") 
+            st.toast("BOOM! ⚡", icon="⚡")
+            time.sleep(1.5)
+            st.rerun()
 
 # --- 7. HISTORIE ---
 st.write("##")
@@ -141,3 +144,4 @@ with st.expander("📈 Deine Historie"):
         st.dataframe(data.sort_values(by="Datum", ascending=False), use_container_width=True)
     else:
         st.info("Noch keine Daten vorhanden.")
+
