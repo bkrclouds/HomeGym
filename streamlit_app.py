@@ -30,10 +30,10 @@ def save_entry(new_row_dict):
         st.error(f"Fehler: {e}")
 
 # --- UI DESIGN ---
-st.title("🏋️‍♂️ My Fitness Hub")
+st.title("🏋️‍♂️ My HomeGym")
 
 # --- TAGES-CHECK (Kreatin & Gewicht) ---
-st.header("🥤 Daily Routine")
+st.header("🥤 Kreatin Tracker")
 col_crea, col_weight = st.columns(2)
 
 with col_crea:
@@ -60,7 +60,7 @@ with col_weight:
 st.divider()
 
 # --- WORKOUT LOG ---
-st.header("📝 Workout Log")
+st.header("📝 Trainingsverlauf")
 exercise = st.text_input("Name der Übung", placeholder="z.B. Bankdrücken")
 
 c1, c2, c3 = st.columns(3)
@@ -102,6 +102,7 @@ if not data.empty:
         st.line_chart(weight_df.set_index("Datum")["Gewicht"])
 else:
     st.info("Noch keine Daten vorhanden. Fang an zu trainieren!")
+
 
 
 
