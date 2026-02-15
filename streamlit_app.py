@@ -12,19 +12,22 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 
 # Funktion zum Laden der Daten
 def load_data():
-    return conn.read(ttl="0s") # ttl=0 sorgt dafür, dass wir immer die neuesten Daten sehen
+    return conn.read(ttl="10m") # ttl=0 sorgt dafür, dass wir immer die neuesten Daten sehen
 
 # Funktion zum Speichern eines neuen Eintrags
 def save_entry(new_row_dict):
     try:
-        existing_data = conn.read(ttl="0s")
-        new_df = pd.concat([existing_data, pd.DataFrame([new_row_dict])], ignore_index=True)
-        conn.update(data=new_df)
+        # Bestehende Daten laden
+        existing_data = conn.read(ttl="10m")
+        # Neue Zeile hinzufügen
+        updated_df = pd.concat([existing_data, pd.DataFrame([new_row_dict])], ignore_index=True)
+        # Update abschicken
+        conn.update(data=updated_df)
+        # JETZT erst den Cache leeren, damit er beim nächsten Mal neu lädt
         st.cache_data.clear()
         st.success("Erfolgreich gespeichert!")
     except Exception as e:
-        # Das hier zeigt uns jetzt den ECHTEN Fehlercode von Google an:
-        st.error(f"Details zum Fehler: {e}")
+        st.error(f"Fehler: {e}")
 
 # --- UI DESIGN ---
 st.title("🏋️‍♂️ My Fitness Hub")
@@ -99,6 +102,7 @@ if not data.empty:
         st.line_chart(weight_df.set_index("Datum")["Gewicht"])
 else:
     st.info("Noch keine Daten vorhanden. Fang an zu trainieren!")
+
 
 
 
