@@ -110,24 +110,32 @@ with st.container(border=True):
     
     st.write("---")
     
-# Die Eingabe darf NICHT zum Rerun führen
-new_weight = st.number_input("Körpergewicht (kg)", value=113.0, step=0.1)
+# --- Körpergewicht Bereich ---
+st.markdown("### ⚖️ Gewicht tracken")
+# Variable definieren
+koerpergewicht_input = st.number_input("Aktuelles Gewicht (kg)", value=113.0, step=0.1, format="%.1f")
 
-if st.button("⚖️ Gewicht speichern"):
-    # Nur wenn der Button gedrückt wurde, passiert das Folgende:
-    success = save_entry({
+if st.button("Gewicht speichern", use_container_width=True):
+    # Alles hierunter ist eingerückt und passiert NUR beim Klick
+    neue_daten = {
         "Datum": str(date.today()),
         "Typ": "Gewicht",
         "Übung/Info": "Körpergewicht",
-        "Gewicht": new_weight,
-        "Sätze": 0, "Wiederholungen": 0
-    })
+        "Gewicht": koerpergewicht_input,
+        "Sätze": 0,
+        "Wiederholungen": 0
+    }
     
-    if success:
-        st.cache_data.clear() # Cache leeren
-        st.rerun() # NUR HIER darf das rerun stehen!
-    
-    # Zuerst Daten laden
+    with st.spinner("Speichere in Google Sheets..."):
+        success = save_entry(neue_daten)
+        
+        if success:
+            st.toast(f"Erfolgreich gespeichert: {koerpergewicht_input} kg", icon="✅")
+            # Cache leeren, damit die Anzeige oben den neuen Wert zieht
+            st.cache_data.clear()
+            # Nur hier darf rerun stehen!
+            st.rerun()
+            
 data = load_data()
 
 # Den aktuellsten Gewichtswert finden
@@ -195,6 +203,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
