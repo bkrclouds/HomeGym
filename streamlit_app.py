@@ -107,3 +107,29 @@ with col_right:
                     time.sleep(1.5)
                     st.rerun()
 
+# --- 8. GRAFISCHE AUSWERTUNG ---
+st.write("##")
+with st.container(border=True):
+    st.markdown("### 📈 Gewichtsverlauf")
+    
+    try:
+        if not data.empty:
+            # Nur Gewichtseinträge filtern
+            df_weight = data[data['Typ'] == 'Gewicht'].copy()
+            
+            if not df_weight.empty:
+                # Datum säubern und sortieren
+                df_weight['Datum'] = pd.to_datetime(df_weight['Datum'])
+                df_weight = df_weight.sort_values('Datum')
+                
+                # Diagramm-Daten vorbereiten
+                chart_data = df_weight.set_index('Datum')['Gewicht']
+                
+                # Das Diagramm anzeigen
+                st.line_chart(chart_data, color="#007AFF")
+            else:
+                st.info("Noch keine Gewichtsdaten für ein Diagramm vorhanden.")
+        else:
+            st.info("Sammle ein paar Daten, um deine Kurve zu sehen!")
+    except Exception as e:
+        st.error("Diagramm konnte nicht geladen werden. Google macht gerade Pause.")
