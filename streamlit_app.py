@@ -3,20 +3,96 @@ from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import date
 
-st.set_page_config(page_title="Fitness Hub", layout="centered")
+# --- SEITEN-SETUP ---
+st.set_page_config(page_title="My Fitness Hub", page_icon="🏋️‍♂️", layout="centered")
 
-# Verbindung zu Google Sheets
+# --- VERBINDUNG ZU GOOGLE SHEETS ---
+# Wir erstellen eine Verbindung zur Tabelle
 conn = st.connection("gsheets", type=GSheetsConnection)
-spreadsheet -"https://docs.google.com/spreadsheets/d/1ougM0NIlwnMBzRUo5_aG36GQAiY3Gl7RhxHKPzd1msI/edit?usp=sharing"
+[connections.gsheets]
+spreadsheet = "https://docs.google.com/spreadsheets/d/1ougM0NIlwnMBzRUo5_aG36GQAiY3Gl7RhxHKPzd1msI/edit?usp=sharing"
 
-# Daten laden
-df = conn.read(ttl="0s") # ttl=0 sorgt für Echtzeit-Updates
+# Funktion zum Laden der Daten
+def load_data():
+    return conn.read(ttl="0s") # ttl=0 sorgt dafür, dass wir immer die neuesten Daten sehen
 
-# --- LOGIK ZUM SPEICHERN ---
-def save_to_gsheets(new_row):
-    global df
-    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-    conn.update(data=df)
-    st.success("Daten synchronisiert!")
+# Funktion zum Speichern eines neuen Eintrags
+def save_entry(new_row_dict):
+    existing_data = load_data()
+    new_df = pd.concat([existing_data, pd.DataFrame([new_row_dict])], ignore_index=True)
+    conn.update(data=new_df)
+    st.cache_data.clear() # Cache leeren, damit die Tabelle sofort aktualisiert wird
 
-# ... (Hier kommt dein UI-Code von oben rein, nur dass du save_to_gsheets aufrufst)
+# --- UI DESIGN ---
+st.title("🏋️‍♂️ My Fitness Hub")
+
+# --- TAGES-CHECK (Kreatin & Gewicht) ---
+st.header("🥤 Daily Routine")
+col_crea, col_weight = st.columns(2)
+
+with col_crea:
+    if st.button("✅ Kreatin eingenommen", use_container_width=True):
+        save_entry({
+            "Datum": str(date.today()), 
+            "Typ": "Kreatin", 
+            "Übung/Info": "5g", 
+            "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0
+        })
+        st.toast("Kreatin geloggt! 💧")
+
+with col_weight:
+    weight = st.number_input("Körpergewicht (kg):", min_value=0.0, step=0.1, format="%.1f")
+    if st.button("⚖️ Gewicht speichern", use_container_width=True):
+        save_entry({
+            "Datum": str(date.today()), 
+            "Typ": "Gewicht", 
+            "Übung/Info": "Körpergewicht", 
+            "Gewicht": weight, "Sätze": 0, "Wiederholungen": 0
+        })
+        st.success(f"{weight} kg gespeichert!")
+
+st.divider()
+
+# --- WORKOUT LOG ---
+st.header("📝 Workout Log")
+exercise = st.text_input("Name der Übung", placeholder="z.B. Bankdrücken")
+
+c1, c2, c3 = st.columns(3)
+with c1:
+    w = st.number_input("Gewicht (kg)", min_value=0.0, step=0.5)
+with c2:
+    s = st.number_input("Sätze", min_value=0, step=1)
+with c3:
+    r = st.number_input("Wiederholungen", min_value=0, step=1)
+
+if st.button("🚀 Satz speichern", use_container_width=True):
+    if exercise:
+        save_entry({
+            "Datum": str(date.today()), 
+            "Typ": "Training", 
+            "Übung/Info": exercise, 
+            "Gewicht": w, "Sätze": s, "Wiederholungen": r
+        })
+        st.balloons()
+        st.success(f"{exercise} hinzugefügt!")
+    else:
+        st.warning("Bitte Übungsnamen angeben.")
+
+st.divider()
+
+# --- HISTORIE & ANALYSE ---
+st.header("📈 Deine Historie")
+data = load_data()
+
+if not data.empty:
+    # Tabellarische Ansicht (Neueste zuerst)
+    st.dataframe(data.sort_values(by="Datum", ascending=False), use_container_width=True)
+    
+    # Gewichtsverlauf Chart
+    weight_df = data[data["Typ"] == "Gewicht"].copy()
+    if not weight_df.empty:
+        st.subheader("Gewichtsverlauf")
+        weight_df["Datum"] = pd.to_datetime(weight_df["Datum"])
+        st.line_chart(weight_df.set_index("Datum")["Gewicht"])
+else:
+    st.info("Noch keine Daten vorhanden. Fang an zu trainieren!")
