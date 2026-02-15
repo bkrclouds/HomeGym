@@ -96,34 +96,39 @@ st.write("##")
 # --- HAUPTBEREICH (Zwei Spalten wie Yazio) ---
 col_left, col_right = st.columns([1, 1.5], gap="large")
 
-with col_left:
+# --- Daily Habits Bereich ---
+with st.container(border=True):
     st.markdown("### 🍎 Daily Habits")
-    with st.container(border=True):
-        if st.button("💊 Kreatin eingenommen", use_container_width=True):
-            # Hier deine save_entry Logik
-            st.toast("Kreatin geloggt!", icon="⚡")
+    
+    # Beispiel Kreatin-Button
+    if st.button("💊 Kreatin eingenommen", use_container_width=True):
+        save_entry({
+            "Datum": str(date.today()), "Typ": "Kreatin", 
+            "Übung/Info": "5g", "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0
+        })
+        st.toast("Kreatin geloggt!", icon="✅")
+    
+    st.write("---")
+    
+    # Körpergewicht Eingabe
+    new_weight_input = st.number_input("Körpergewicht (kg)", value=113.0, step=0.1, format="%.1f")
+    
+    if st.button("⚖️ Gewicht speichern", use_container_width=True):
+        # WICHTIG: Die Variable muss HIER definiert werden, damit sie verfügbar ist
+        weight_data_to_save = {
+            "Datum": str(date.today()),
+            "Typ": "Gewicht",
+            "Übung/Info": "Körpergewicht",
+            "Gewicht": new_weight_input,
+            "Sätze": 0,
+            "Wiederholungen": 0
+        }
         
-      # --- Gewichtsbereich ---
-        new_weight = st.number_input("Körpergewicht (kg)", value=82.4, step=0.1, format="%.1f")
-        
-        if st.button("⚖️ Gewicht speichern", use_container_width=True):
-            # Ab hier muss alles eingerückt sein
-            weight_entry = {
-                "Datum": str(date.today()),
-                "Typ": "Gewicht",
-                "Übung/Info": "Körpergewicht",
-                "Gewicht": new_weight,
-                "Sätze": 0,
-                "Wiederholungen": 0
-            }
-            
-            # Speicher-Funktion aufrufen
-            success = save_entry(weight_entry)
-            
-            if success:
-                st.toast(f"Erfolg: {new_weight} kg gespeichert!", icon="⚖️")
-                st.cache_data.clear() # Gedächtnis löschen
-                st.rerun() # Seite neu laden für die Metrik oben
+        # Speichern aufrufen
+        if save_entry(weight_data_to_save):
+            st.toast(f"Gespeichert: {new_weight_input} kg", icon="⚖️")
+            st.cache_data.clear()
+            st.rerun()
     
     # Zuerst Daten laden
 data = load_data()
@@ -193,6 +198,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
