@@ -29,7 +29,7 @@ def save_entry(new_row_dict):
         # WICHTIG: Cache löschen, damit die Historie beim nächsten Mal aktuell ist
         st.cache_data.clear()
         
-        st.ballons()
+        st.toast()
         st.success("Erfolgreich im Sheet gespeichert!")
     except Exception as e:
         if "429" in str(e) or "quota" in str(e).lower():
@@ -193,6 +193,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
