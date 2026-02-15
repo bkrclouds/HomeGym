@@ -24,6 +24,38 @@ def save_entry(new_row_dict):
         st.error(f"Fehler beim Speichern: {e}")
         return False
 
+def get_kreatin_streak(df):
+    if df.empty:
+        return 0
+    
+    # Nur Kreatin-Einträge filtern und Duplikate pro Tag entfernen
+    kreatin_dates = pd.to_datetime(df[df['Typ'] == 'Kreatin']['Datum']).dt.date.unique()
+    kreatin_dates = sorted(kreatin_dates, reverse=True)
+    
+    if not kreatin_dates:
+        return 0
+    
+    streak = 0
+    today = date.today()
+    check_date = today
+    
+    # Falls heute noch nichts geloggt wurde, prüfen wir ab gestern
+    if kreatin_dates[0] < today:
+        check_date = today - pd.Timedelta(days=1)
+        # Wenn auch gestern nichts war -> Streak gerissen (außer man hat heute noch Zeit)
+        if kreatin_dates[0] < check_date:
+            return 0
+
+    # Rückwärts zählen
+    for d in kreatin_dates:
+        if d == check_date:
+            streak += 1
+            check_date -= pd.Timedelta(days=1)
+        elif d < check_date:
+            break # Lücke gefunden
+            
+    return streak
+
 # --- DESIGN (MacroFactory Dark) ---
 st.markdown("""
     <style>
@@ -150,3 +182,4 @@ with st.container(border=True):
             st.info("Sammle ein paar Daten, um deine Kurve zu sehen!")
     except Exception as e:
         st.error(f"Diagramm-Fehler: {e}")
+
