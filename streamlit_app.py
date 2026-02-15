@@ -11,11 +11,11 @@ st.set_page_config(page_title="Iron Hub", page_icon="🦾", layout="wide")
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 def load_data():
-    return conn.read(ttl="0s") # Wir erzwingen frische Daten beim Laden
+    return conn.read(ttl="1s") # Wir erzwingen frische Daten beim Laden
 
 def save_entry(new_row_dict):
     try:
-        existing_data = conn.read(ttl="0s")
+        existing_data = conn.read(ttl="1s")
         updated_df = pd.concat([existing_data, pd.DataFrame([new_row_dict])], ignore_index=True)
         conn.update(data=updated_df)
         st.cache_data.clear()
@@ -106,3 +106,4 @@ with col_right:
                     st.success("Training gespeichert! ⚡")
                     time.sleep(1.5)
                     st.rerun()
+
