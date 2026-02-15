@@ -152,7 +152,22 @@ with st.container(border=True):
     st.markdown("### 📈 Gewichtsverlauf & Ziel")
     
     # --- DEIN ZIEL HIER EINTRAGEN ---
-    ziel_gewicht = 100.0 # Ändere diese Zahl auf dein persönliches Ziel
+    # --- SEITENLEISTE (SIDEBAR) FÜR EINSTELLUNGEN ---
+with st.sidebar:
+    st.markdown("### ⚙️ Einstellungen")
+    # Hier kannst du dein Ziel jetzt jederzeit in der App ändern
+    ziel_gewicht = st.number_input(
+        "Dein Zielgewicht (kg)", 
+        value=100.0, 
+        step=0.5, 
+        format="%.1f"
+    )
+    st.write("---")
+    st.info(f"Dein aktuelles Ziel: **{ziel_gewicht} kg**")
+
+# --- IM DIAGRAMM-CODE (Weiter unten) ---
+# In deinem Plotly-Diagramm nutzt du dann einfach die Variable 'ziel_gewicht'
+# (Der Rest des Diagramm-Codes von vorhin bleibt gleich, da er 'ziel_gewicht' bereits nutzt)
     # --------------------------------
     
     try:
@@ -203,3 +218,4 @@ with st.container(border=True):
             st.info("Sammle Daten für deine Kurve!")
     except Exception as e:
         st.error(f"Diagramm-Fehler: {e}")
+
