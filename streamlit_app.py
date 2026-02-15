@@ -106,14 +106,21 @@ with col_left:
         st.write("---")
         new_weight = st.number_input("Körpergewicht (kg)", value=82.4, step=0.1)
         if st.button("⚖️ Gewicht speichern", use_container_width=True):
-    # 1. Daten für das Google Sheet vorbereiten
+    # Alles hierunter MUSS eingerückt sein!
     new_data = {
         "Datum": str(date.today()),
         "Typ": "Gewicht",
         "Übung/Info": "Körpergewicht",
-        "Gewicht": new_weight, # Hier muss dein Eingabewert stehen
-        "Sätze": 0, 
+        "Gewicht": new_weight, 
+        "Sätze": 0,
         "Wiederholungen": 0
+    }
+    
+    success = save_entry(new_data)
+    
+    if success:
+        st.toast(f"Gespeichert: {new_weight} kg", icon="⚖️")
+        st.rerun() # Damit die Anzeige oben sofort springt
     }
     
     # 2. In Google Sheets speichern
@@ -158,4 +165,5 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
