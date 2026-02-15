@@ -18,14 +18,13 @@ def load_data():
 def save_entry(new_row_dict):
     try:
         existing_data = conn.read(ttl="0s")
-        # Wir stellen sicher, dass die neuen Daten exakt das gleiche Format haben
         new_df = pd.concat([existing_data, pd.DataFrame([new_row_dict])], ignore_index=True)
-        # Wir versuchen das Update
         conn.update(data=new_df)
         st.cache_data.clear()
         st.success("Erfolgreich gespeichert!")
     except Exception as e:
-        st.error(f"Schreibfehler: Bitte prüfe, ob das Sheet auf 'Editor' steht.")
+        # Das hier zeigt uns jetzt den ECHTEN Fehlercode von Google an:
+        st.error(f"Details zum Fehler: {e}")
 
 # --- UI DESIGN ---
 st.title("🏋️‍♂️ My Fitness Hub")
@@ -100,6 +99,7 @@ if not data.empty:
         st.line_chart(weight_df.set_index("Datum")["Gewicht"])
 else:
     st.info("Noch keine Daten vorhanden. Fang an zu trainieren!")
+
 
 
 
