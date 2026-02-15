@@ -115,6 +115,25 @@ with col_left:
         "Sätze": 0,
         "Wiederholungen": 0
     }
+    # Zuerst Daten laden
+data = load_data()
+
+# Den aktuellsten Gewichtswert finden
+if not data.empty and "Gewicht" in data['Typ'].values:
+    # Filtert nach 'Gewicht' und nimmt den letzten Eintrag
+    aktuelle_last_weight = data[data['Typ'] == 'Gewicht']['Gewicht'].iloc[-1]
+else:
+    aktuelle_last_weight = 0.0
+
+# Jetzt die Metrik mit dem echten Wert füttern
+m1, m2, m3 = st.columns(3)
+with m1:
+    st.metric("Tages-Ziel", "Kreatin", "⏳")
+with m2:
+    # Hier wird jetzt automatisch der Wert aus dem Sheet angezeigt!
+    st.metric("Gewicht", f"{aktuelle_last_weight} kg")
+with m3:
+    st.metric("PUMP", "Leg Day", "🔥")
     
     success = save_entry(new_data)
     
@@ -165,5 +184,6 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
