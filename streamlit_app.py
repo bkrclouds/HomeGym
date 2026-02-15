@@ -37,75 +37,84 @@ def save_entry(new_row_dict):
         else:
             st.error(f"Fehler: {e}")
 
-# --- STYLING ---
-st.set_page_config(page_title="Iron Hub", page_icon="🏋️‍♂️", layout="wide")
-
-# Custom CSS für den Yazio-Look (Abgerundete Ecken, Schatten)
+# --- MODERN CLEAN DESIGN ---
 st.markdown("""
     <style>
-    .main { background-color: #0e1117; }
-    div[data-testid="stMetricValue"] { font-size: 1.8rem; color: #ff4b4b; }
-    .stButton>button { width: 100%; border-radius: 10px; height: 3em; background-color: #262730; color: white; border: 1px solid #444; }
-    .stButton>button:hover { border-color: #ff4b4b; color: #ff4b4b; }
+    /* Hintergrund und Schrift */
+    .stApp {
+        background-color: #F8F9FA;
+    }
+    
+    /* Karten-Style für Container */
+    div[data-testid="stVerticalBlock"] > div:has(div[data-testid="stMetricValue"]) {
+        background-color: white;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    /* Buttons wie App-Kacheln */
+    .stButton>button {
+        border-radius: 12px;
+        border: none;
+        background-color: #007BFF;
+        color: white;
+        transition: all 0.3s;
+    }
+    
+    .stButton>button:hover {
+        background-color: #0056b3;
+        transform: translateY(-2px);
+    }
+
+    /* Eingabefelder verschönern */
+    .stNumberInput, .stTextInput, .stSelectbox {
+        border-radius: 10px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🏋️‍♂️ Iron Hub")
+# --- APP LAYOUT ---
+st.title("☀️ My Fitness Hub")
 
-# --- OBEN: ÜBERSICHT (METRICS) ---
-# Hier simulieren wir die Yazio-Kacheln für den schnellen Check
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Status", "🔥 5 Tage Streak")
-m2.metric("Gewicht", "82.5 kg", "-0.2 kg")
-m3.metric("Kreatin", "✅ Ja")
-m4.metric("Workouts", "12", "Monat")
+# Dashboard Bereich
+with st.container():
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Tages-Ziel", "Kreatin", "⏳ Offen")
+    with col2:
+        st.metric("Gewicht", "82.4 kg", "-0.1 kg")
+    with col3:
+        st.metric("Training", "Leg Day", "Heute")
 
-st.divider()
+st.write("##") # Abstand
 
-# --- MITTE: INTERAKTION ---
-col_left, col_right = st.columns([1, 2]) # Links schmal für Daily, rechts breit für Log
+# Haupt-Interaktion
+tab1, tab2 = st.tabs(["🚀 Quick Log", "📈 Fortschritt"])
 
-with col_left:
-    with st.container(border=True):
-        st.subheader("🍎 Daily Routine")
-        kreatin = st.button("💊 Kreatin geloggt")
-        if kreatin:
-            # Hier deine save_entry Logik für Kreatin
-            st.toast("Kreatin gespeichert!", icon="✅")
-        
-        st.write("---")
-        
-        weight_input = st.number_input("Aktuelles Gewicht (kg)", min_value=0.0, format="%.1f")
-        if st.button("⚖️ Gewicht speichern"):
-            # Hier deine save_entry Logik für Gewicht
-            st.toast("Gewicht aktualisiert!")
-
-with col_right:
-    with st.container(border=True):
-        st.subheader("📝 Workout Log")
-        
-        c1, c2 = st.columns(2)
-        with c1:
-            uebung = st.selectbox("Übung", ["Bankdrücken", "Kniebeugen", "Kreuzheben", "Schulterdrücken"])
-        with c2:
-            st.text_input("Notiz", placeholder="Gutes Gefühl heute...")
+with tab1:
+    c1, c2 = st.columns(2)
+    
+    with c1:
+        st.markdown("### Daily Routine")
+        with st.container(border=True):
+            if st.button("✅ Kreatin eingenommen"):
+                # Hier deine Speicher-Funktion aufrufen
+                st.toast("Sauber! Kreatin ist drin.")
             
-        c3, c4, c5 = st.columns(3)
-        with c3:
-            gew = st.number_input("Gewicht (kg)", step=2.5)
-        with c4:
-            saetze = st.number_input("Sätze", step=1)
-        with c5:
-            wiederh = st.number_input("Reps", step=1)
-            
-        if st.button("🚀 Satz speichern", type="primary"):
-            # Hier deine save_entry Logik für das Workout
-            st.balloons()
+            weight = st.number_input("Gewicht tracken", value=82.4)
+            if st.button("⚖️ Gewicht speichern"):
+                st.toast("Gewicht gespeichert!")
 
-# --- UNTEN: HISTORIE ---
-st.divider()
-with st.expander("📊 Deine Historie & Fortschritt", expanded=False):
-    # Hier lädst du deine Daten wie bisher
-    # data = load_data()
-    # st.line_chart(data.set_index('Datum')['Gewicht'])
-    st.info("Hier erscheinen bald deine Fortschritts-Graphen!")
+    with c2:
+        st.markdown("### Workout Log")
+        with st.container(border=True):
+            exercise = st.selectbox("Übung", ["Bankdrücken", "Kniebeugen", "Latzug"])
+            col_a, col_b = st.columns(2)
+            with col_a:
+                kg = st.number_input("kg", step=2.5)
+            with col_b:
+                reps = st.number_input("Reps", step=1)
+            
+            if st.button("➕ Satz hinzufügen", type="primary"):
+                st.balloons()
