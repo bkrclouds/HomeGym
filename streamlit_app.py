@@ -29,7 +29,7 @@ def save_entry(new_row_dict):
         # WICHTIG: Cache löschen, damit die Historie beim nächsten Mal aktuell ist
         st.cache_data.clear()
         
-        st.balloons()
+        st.lightning()
         st.success("Erfolgreich im Sheet gespeichert!")
     except Exception as e:
         if "429" in str(e) or "quota" in str(e).lower():
@@ -106,8 +106,24 @@ with col_left:
         st.write("---")
         new_weight = st.number_input("Körpergewicht (kg)", value=82.4, step=0.1)
         if st.button("⚖️ Gewicht speichern", use_container_width=True):
-            # Hier deine save_entry Logik
-            st.toast("Gewicht aktualisiert!")
+    # 1. Daten für das Google Sheet vorbereiten
+    new_data = {
+        "Datum": str(date.today()),
+        "Typ": "Gewicht",
+        "Übung/Info": "Körpergewicht",
+        "Gewicht": new_weight, # Hier muss dein Eingabewert stehen
+        "Sätze": 0, 
+        "Wiederholungen": 0
+    }
+    
+    # 2. In Google Sheets speichern
+    save_entry(new_data)
+    
+    # 3. WICHTIG: Den Cache leeren, damit die App die neuen Daten sofort lädt
+    st.cache_data.clear()
+    
+    # 4. Feedback für dich
+    st.toast(f"{new_weight} kg erfolgreich gespeichert!")
 
 with col_right:
     st.markdown("### 🏋️‍♂️ Workout Log")
@@ -142,3 +158,4 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
