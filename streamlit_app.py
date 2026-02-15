@@ -107,10 +107,12 @@ with col_right:
                     time.sleep(1.5)
                     st.rerun()
 
+import plotly.express as px # Stelle sicher, dass dies oben bei den Imports steht!
+
 # --- 8. GRAFISCHE AUSWERTUNG ---
 st.write("##")
 with st.container(border=True):
-    st.markdown("### 📈 Gewichtsverlauf")
+    st.markdown("### 📈 Gewichtsverlauf (Detailansicht)")
     
     try:
         if not data.empty:
@@ -122,14 +124,29 @@ with st.container(border=True):
                 df_weight['Datum'] = pd.to_datetime(df_weight['Datum'])
                 df_weight = df_weight.sort_values('Datum')
                 
-                # Diagramm-Daten vorbereiten
-                chart_data = df_weight.set_index('Datum')['Gewicht']
+                # Plotly Diagramm für den "Zoom"-Effekt
+                fig = px.line(
+                    df_weight, 
+                    x='Datum', 
+                    y='Gewicht',
+                    markers=True,
+                    template="plotly_dark", # Passt perfekt zum MacroFactory Design
+                    color_discrete_sequence=['#007AFF']
+                )
                 
-                # Das Diagramm anzeigen
-                st.line_chart(chart_data, color="#007AFF")
+                # Hier passiert die Magie: Die Achse passt sich deinem Gewicht an
+                fig.update_yaxes(autorange=True, fixedrange=False)
+                fig.update_layout(
+                    margin=dict(l=20, r=20, t=20, b=20),
+                    height=300,
+                    xaxis_title=None,
+                    yaxis_title="kg"
+                )
+                
+                st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             else:
                 st.info("Noch keine Gewichtsdaten für ein Diagramm vorhanden.")
         else:
             st.info("Sammle ein paar Daten, um deine Kurve zu sehen!")
     except Exception as e:
-        st.error("Diagramm konnte nicht geladen werden. Google macht gerade Pause.")
+        st.error(f"Diagramm-Fehler: {e}")
