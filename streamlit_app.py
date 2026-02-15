@@ -129,10 +129,22 @@ with col_left:
                 st.rerun()
 
 with col_right:
+    # --- SESSION STATE INITIALISIERUNG ---
+    # Das sorgt dafür, dass die App sich merkt, was du im Guide geklickt hast
+    if 'selected_exercise' not in st.session_state:
+        st.session_state.selected_exercise = ""
+
     # --- WORKOUT LOG EINGABE ---
     with st.container(border=True):
         st.markdown("### 🏋️‍♂️ Workout Log")
-        u_name = st.text_input("Name der Übung", placeholder="z.B. Bankdrücken")
+        
+        # Das Eingabefeld zieht sich den Wert jetzt aus dem Session State
+        u_name = st.text_input(
+            "Name der Übung", 
+            value=st.session_state.selected_exercise,
+            placeholder="z.B. Bankdrücken",
+            key="exercise_input"
+        )
         
         c1, c2, c3 = st.columns(3)
         u_kg = c1.number_input("kg", step=2.5, min_value=0.0)
@@ -143,78 +155,59 @@ with col_right:
             if u_name:
                 if save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}):
                     st.toast(f"{u_name} geloggt! ⚡", icon="⚡")
-                    st.success("Erfolg gespeichert!")
+                    # Nach dem Speichern das Feld leeren
+                    st.session_state.selected_exercise = ""
                     time.sleep(1.5)
                     st.rerun()
             else:
-                st.warning("Bitte gib einen Namen für die Übung ein.")
+                st.warning("Bitte gib einen Namen ein oder wähle eine Übung unten aus.")
 
-    st.write("##") # Abstandhalter
+    st.write("##")
 
-    # --- ÜBUNGS-GUIDE (UNTERMENÜ) ---
-    with st.expander("📚 Profi-Übungskatalog (30+ Übungen)", expanded=False):
+    # --- ÜBUNGS-GUIDE MIT ÜBERNAHME-FUNKTION ---
+    with st.expander("📚 Profi-Übungskatalog (Klick zum Übernehmen)", expanded=False):
         tab1, tab2, tab3 = st.tabs(["Brust & Schultern", "Rücken & Bizeps", "Beine & Core"])
 
+        # Funktion zur Aktualisierung des Eingabefeldes
+        def set_exercise(name):
+            st.session_state.selected_exercise = name
+
         with tab1:
-            # --- BRUST & SCHULTERN ---
-            kat_brust = st.selectbox("Übung wählen (Brust/Schulter):", [
-                "Bankdrücken (Langhantel)", "Schrägbankdrücken", "Flyes (Kurzhantel)", "Liegestütze", "Dips",
-                "Schulterdrücken (Military Press)", "Seitheben", "Frontheben", "Butterfly", "Push-ups (Diamond)"
-            ])
-            guides_b = {
-                "Bankdrücken (Langhantel)": "Klassiker für die Brust. Stange zur Mitte der Brust führen, Ellbogen leicht nach innen.",
-                "Schrägbankdrücken": "Fokus auf die obere Brust. Bank auf ca. 30-45 Grad einstellen.",
-                "Flyes (Kurzhantel)": "Dehnung der Brustmuskulatur. Arme fast gestreckt wie bei einer Umarmung führen.",
-                "Liegestütze": "Körperspannung halten! Hände unter den Schultern, Brust berührt fast den Boden.",
-                "Dips": "Fokus auf untere Brust und Trizeps. Oberkörper leicht nach vorne lehnen.",
-                "Schulterdrücken (Military Press)": "Core anspannen, kein Hohlkreuz! Gewicht senkrecht über den Kopf drücken.",
-                "Seitheben": "Hanteln seitlich führen, bis die Arme parallel zum Boden sind. Kleine Finger leicht höher.",
-                "Frontheben": "Gewicht vor dem Körper auf Augenhöhe heben. Nicht mit dem Körper schwingen.",
-                "Butterfly": "Konstante Spannung auf der Brust. Hände auf Brusthöhe zusammenführen.",
-                "Push-ups (Diamond)": "Hände bilden ein Dreieck unter der Brust. Fokus auf Trizeps und innere Brust."
-            }
-            st.info(guides_b[kat_brust])
+            kat_brust = st.selectbox("Übung wählen:", [
+                "Wähle eine Übung...", "Bankdrücken (Langhantel)", "Schrägbankdrücken", "Flyes (Kurzhantel)", 
+                "Liegestütze", "Dips", "Schulterdrücken", "Seitheben", "Frontheben", "Butterfly"
+            ], key="sb_brust")
+            
+            if kat_brust != "Wähle eine Übung...":
+                st.info(f"Anleitung: Hier kommt deine Beschreibung für {kat_brust} hin.")
+                if st.button(f"✅ {kat_brust} übernehmen"):
+                    set_exercise(kat_brust)
+                    st.rerun() # Seite neu laden, um den Wert oben einzusetzen
 
         with tab2:
-            # --- RÜCKEN & BIZEPS ---
-            kat_ruecken = st.selectbox("Übung wählen (Rücken/Bizeps):", [
-                "Klimmzüge", "Latzug (Breit)", "Rudern (Langhantel)", "Einarmiges Rudern", "Kreuzheben",
-                "Hyperextensions", "Facepulls", "Bizeps Curls (SZ)", "Hammer Curls", "Konzentrations-Curls"
-            ])
-            guides_r = {
-                "Klimmzüge": "Hände weit greifen, Brust zur Stange ziehen. Schulterblätter aktiv nach unten.",
-                "Latzug (Breit)": "Stange zur oberen Brust ziehen, leichtes Zurücklehnen erlaubt.",
-                "Rudern (Langhantel)": "Oberkörper fast parallel zum Boden. Stange zum Bauchnabel ziehen.",
-                "Einarmiges Rudern": "Auf Bank abstützen. Hantel kontrolliert zur Hüfte ziehen.",
-                "Kreuzheben": "Rücken gerade! Kraft kommt aus den Beinen und dem unteren Rücken.",
-                "Hyperextensions": "Stärkt den unteren Rücken. Bewegung nur aus der Hüfte, kein Überstrecken.",
-                "Facepulls": "Seil zum Gesicht ziehen, Ellbogen hoch. Perfekt für die hintere Schulter.",
-                "Bizeps Curls (SZ)": "SZ-Stange für handgelenkschonendes Training. Ellbogen bleiben fest an den Rippen.",
-                "Hammer Curls": "Daumen zeigen nach oben. Trainiert den Brachialis (Dicke des Oberarms).",
-                "Konzentrations-Curls": "Im Sitzen, Ellbogen am Innenschenkel fixiert. Kein Abfälschen möglich."
-            }
-            st.info(guides_r[kat_ruecken])
+            kat_ruecken = st.selectbox("Übung wählen:", [
+                "Wähle eine Übung...", "Klimmzüge", "Latzug (Breit)", "Rudern", "Kreuzheben", 
+                "Bizeps Curls", "Hammer Curls"
+            ], key="sb_ruecken")
+            
+            if kat_ruecken != "Wähle eine Übung...":
+                st.info(f"Anleitung: Fokus auf den Rücken bei {kat_ruecken}.")
+                if st.button(f"✅ {kat_ruecken} übernehmen"):
+                    set_exercise(kat_ruecken)
+                    st.rerun()
 
         with tab3:
-            # --- BEINE & CORE ---
-            kat_beine = st.selectbox("Übung wählen (Beine/Core):", [
-                "Kniebeugen", "Beinpresse", "Ausfallschritte", "Beinstrecker", "Beinbeuger (Liegend)",
-                "Wadenheben", "Plank (Unterarmstütz)", "Crunches", "Beinheben", "Russian Twist"
-            ])
-            guides_be = {
-                "Kniebeugen": "Hüfte nach hinten, Rücken gerade. Knie bleiben stabil über den Füßen.",
-                "Beinpresse": "Füße schulterbreit. Knie nicht komplett durchdrücken am Ende.",
-                "Ausfallschritte": "Großer Schritt nach vorn, hinteres Knie geht Richtung Boden. Oberkörper aufrecht.",
-                "Beinstrecker": "Fokus auf den Quadrizeps. Oben kurz halten für maximale Kontraktion.",
-                "Beinbeuger (Liegend)": "Fersen Richtung Gesäß ziehen. Hüfte bleibt auf der Polsterung.",
-                "Wadenheben": "Über den gesamten Bewegungsumfang gehen (tief dehnen, hoch drücken).",
-                "Plank (Unterarmstütz)": "Körper bildet eine gerade Linie. Po nicht zu hoch, Bauch maximal anspannen.",
-                "Crunches": "Nur den oberen Rücken vom Boden abheben. Blick zur Decke.",
-                "Beinheben": "Rücken bleibt flach am Boden. Beine gestreckt langsam senken und heben.",
-                "Russian Twist": "Im Sitzen Beine abheben und Oberkörper rotieren. Optional mit Gewicht."
-            }
-            st.info(guides_be[kat_beine])
-
+            kat_beine = st.selectbox("Übung wählen:", [
+                "Wähle eine Übung...", "Kniebeugen", "Beinpresse", "Ausfallschritte", 
+                "Wadenheben", "Plank", "Crunches"
+            ], key="sb_beine")
+            
+            if kat_beine != "Wähle eine Übung...":
+                st.info(f"Anleitung: Stabile Basis bei {kat_beine}.")
+                if st.button(f"✅ {kat_beine} übernehmen"):
+                    set_exercise(kat_beine)
+                    st.rerun()
+                    
 # --- 8. DIAGRAMM (MIT FIX FÜR SYNTAX ERROR) ---
 st.write("##")
 with st.container(border=True):
@@ -241,6 +234,7 @@ with st.expander("📂 Historie & Filter"):
         sel = st.selectbox("Übung filtern", uebungen)
         disp = data[data['Übung/Info'] == sel] if sel != "Alle" else data
         st.dataframe(disp.sort_values("Datum", ascending=False), use_container_width=True)
+
 
 
 
