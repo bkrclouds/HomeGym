@@ -16,10 +16,13 @@ def load_data():
 
 # Funktion zum Speichern eines neuen Eintrags
 def save_entry(new_row_dict):
-    existing_data = load_data()
-    new_df = pd.concat([existing_data, pd.DataFrame([new_row_dict])], ignore_index=True)
-    conn.update(data=new_df)
-    st.cache_data.clear() # Cache leeren, damit die Tabelle sofort aktualisiert wird
+    # Wir laden die aktuellen Daten
+    existing_data = conn.read(ttl="0s")
+    # Wir fügen die neue Zeile hinzu
+    updated_df = pd.concat([existing_data, pd.DataFrame([new_row_dict])], ignore_index=True)
+    # Wir schreiben alles zurück
+    conn.update(data=updated_df)
+    st.cache_data.clear()
 
 # --- UI DESIGN ---
 st.title("🏋️‍♂️ My Fitness Hub")
@@ -94,5 +97,6 @@ if not data.empty:
         st.line_chart(weight_df.set_index("Datum")["Gewicht"])
 else:
     st.info("Noch keine Daten vorhanden. Fang an zu trainieren!")
+
 
 
