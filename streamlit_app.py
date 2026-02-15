@@ -103,7 +103,7 @@ col_left, col_right = st.columns([1, 1.5], gap="large")
 
 with col_left:
     with st.container(border=True):
-        st.markdown("### 🍎 Daily Habits")
+        st.markdown("### 🍎 Kreatin einnahme")
         
         # KREATIN LOGIK
         if st.button("💊 Kreatin eingenommen"):
@@ -187,5 +187,6 @@ with st.container(border=True):
             st.info("Sammle ein paar Daten, um deine Kurve zu sehen!")
     except Exception as e:
         st.error(f"Diagramm-Fehler: {e}")
+
 
 
