@@ -110,31 +110,29 @@ with st.container(border=True):
     
     st.write("---")
     
-# --- Körpergewicht Bereich ---
-st.markdown("### ⚖️ Gewicht tracken")
-# Variable definieren
-koerpergewicht_input = st.number_input("Aktuelles Gewicht (kg)", value=113.0, step=0.1, format="%.1f")
-
-if st.button("Gewicht speichern", use_container_width=True):
-    # Alles hierunter ist eingerückt und passiert NUR beim Klick
-    neue_daten = {
-        "Datum": str(date.today()),
-        "Typ": "Gewicht",
-        "Übung/Info": "Körpergewicht",
-        "Gewicht": koerpergewicht_input,
-        "Sätze": 0,
-        "Wiederholungen": 0
-    }
+# --- DATEN LOGIK FÜR DASHBOARD ---
+if not data.empty:
+    # Letztes Gewicht finden
+    weights = data[data['Typ'] == 'Gewicht']
+    last_weight = weights['Gewicht'].iloc[-1] if not weights.empty else 0.0
     
-    with st.spinner("Speichere in Google Sheets..."):
-        success = save_entry(neue_daten)
-        
-        if success:
-            st.toast(f"Erfolgreich gespeichert: {koerpergewicht_input} kg", icon="✅")
-            # Cache leeren, damit die Anzeige oben den neuen Wert zieht
-            st.cache_data.clear()
-            # Nur hier darf rerun stehen!
-            st.rerun()
+    # Letztes Training finden
+    trainings = data[data['Typ'] == 'Training']
+    last_workout = trainings['Übung/Info'].iloc[-1] if not trainings.empty else "Kein Training"
+else:
+    last_weight = 0.0
+    last_workout = "Kein Training"
+
+# --- DASHBOARD ANZEIGE ---
+m1, m2, m3 = st.columns(3)
+with m1:
+    st.metric("Tages-Ziel", "Kreatin", "⏳")
+with m2:
+    # Hier nutzen wir jetzt die Variable 'last_weight'
+    st.metric("Gewicht", f"{last_weight} kg") 
+with m3:
+    # Hier nutzen wir 'last_workout'
+    st.metric("PUMP", last_workout)
             
 data = load_data()
 
@@ -203,6 +201,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
