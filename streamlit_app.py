@@ -129,33 +129,38 @@ with col_left:
                 st.rerun()
 
 with col_right:
+    # --- WORKOUT LOG EINGABE ---
     with st.container(border=True):
         st.markdown("### 🏋️‍♂️ Workout Log")
         u_name = st.text_input("Name der Übung", placeholder="z.B. Bankdrücken")
+        
         c1, c2, c3 = st.columns(3)
-        u_kg = c1.number_input("kg", step=2.5)
-        u_s = c2.number_input("Sätze", step=1)
-        u_r = c3.number_input("Reps", step=1)
+        u_kg = c1.number_input("kg", step=2.5, min_value=0.0)
+        u_s = c2.number_input("Sätze", step=1, min_value=0)
+        u_r = c3.number_input("Reps", step=1, min_value=0)
+        
         if st.button("🚀 Satz speichern"):
             if u_name:
                 if save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}):
-                    st.toast("BOOM! ⚡", icon="⚡")
+                    st.toast(f"{u_name} geloggt! ⚡", icon="⚡")
+                    st.success("Erfolg gespeichert!")
                     time.sleep(1.5)
                     st.rerun()
+            else:
+                st.warning("Bitte gib einen Namen für die Übung ein.")
 
-# --- ÜBUNGS-GUIDE (ERWEITERT) ---
-with col_right:
-    st.write("##")
+    st.write("##") # Abstandhalter
+
+    # --- ÜBUNGS-GUIDE (UNTERMENÜ) ---
     with st.expander("📚 Profi-Übungskatalog (30+ Übungen)", expanded=False):
         tab1, tab2, tab3 = st.tabs(["Brust & Schultern", "Rücken & Bizeps", "Beine & Core"])
 
         with tab1:
-            # --- BRUST/SCHULTERN ---
-            kat_brust = st.selectbox("Wähle eine Übung (Brust/Schulter):", [
+            # --- BRUST & SCHULTERN ---
+            kat_brust = st.selectbox("Übung wählen (Brust/Schulter):", [
                 "Bankdrücken (Langhantel)", "Schrägbankdrücken", "Flyes (Kurzhantel)", "Liegestütze", "Dips",
                 "Schulterdrücken (Military Press)", "Seitheben", "Frontheben", "Butterfly", "Push-ups (Diamond)"
             ])
-            
             guides_b = {
                 "Bankdrücken (Langhantel)": "Klassiker für die Brust. Stange zur Mitte der Brust führen, Ellbogen leicht nach innen.",
                 "Schrägbankdrücken": "Fokus auf die obere Brust. Bank auf ca. 30-45 Grad einstellen.",
@@ -171,12 +176,11 @@ with col_right:
             st.info(guides_b[kat_brust])
 
         with tab2:
-            # --- RÜCKEN/BIZEPS ---
-            kat_ruecken = st.selectbox("Wähle eine Übung (Rücken/Bizeps):", [
+            # --- RÜCKEN & BIZEPS ---
+            kat_ruecken = st.selectbox("Übung wählen (Rücken/Bizeps):", [
                 "Klimmzüge", "Latzug (Breit)", "Rudern (Langhantel)", "Einarmiges Rudern", "Kreuzheben",
                 "Hyperextensions", "Facepulls", "Bizeps Curls (SZ)", "Hammer Curls", "Konzentrations-Curls"
             ])
-            
             guides_r = {
                 "Klimmzüge": "Hände weit greifen, Brust zur Stange ziehen. Schulterblätter aktiv nach unten.",
                 "Latzug (Breit)": "Stange zur oberen Brust ziehen, leichtes Zurücklehnen erlaubt.",
@@ -192,12 +196,11 @@ with col_right:
             st.info(guides_r[kat_ruecken])
 
         with tab3:
-            # --- BEINE/CORE ---
-            kat_beine = st.selectbox("Wähle eine Übung (Beine/Core):", [
+            # --- BEINE & CORE ---
+            kat_beine = st.selectbox("Übung wählen (Beine/Core):", [
                 "Kniebeugen", "Beinpresse", "Ausfallschritte", "Beinstrecker", "Beinbeuger (Liegend)",
                 "Wadenheben", "Plank (Unterarmstütz)", "Crunches", "Beinheben", "Russian Twist"
             ])
-            
             guides_be = {
                 "Kniebeugen": "Hüfte nach hinten, Rücken gerade. Knie bleiben stabil über den Füßen.",
                 "Beinpresse": "Füße schulterbreit. Knie nicht komplett durchdrücken am Ende.",
@@ -212,7 +215,7 @@ with col_right:
             }
             st.info(guides_be[kat_beine])
 
-# --- 9. DIAGRAMM (MIT FIX FÜR SYNTAX ERROR) ---
+# --- 8. DIAGRAMM (MIT FIX FÜR SYNTAX ERROR) ---
 st.write("##")
 with st.container(border=True):
     st.markdown("### 📈 Gewichtsverlauf & Ziel")
@@ -238,5 +241,6 @@ with st.expander("📂 Historie & Filter"):
         sel = st.selectbox("Übung filtern", uebungen)
         disp = data[data['Übung/Info'] == sel] if sel != "Alle" else data
         st.dataframe(disp.sort_values("Datum", ascending=False), use_container_width=True)
+
 
 
