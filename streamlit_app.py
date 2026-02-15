@@ -150,7 +150,7 @@ with m2:
 with m3:
     st.metric("PUMP", "Leg Day", "🔥")
     
-    success = save_entry(new_data)
+    success = save_entry
     
     if success:
         st.toast(f"Gespeichert: {new_weight} kg", icon="⚖️")
@@ -198,6 +198,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
