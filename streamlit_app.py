@@ -16,6 +16,20 @@ conn = st.connection("gsheets", type=GSheetsConnection)
 def load_data():
     return conn.read()
 
+def delete_last_entry():
+    try:
+        existing_data = conn.read(ttl="0s")
+        if not existing_data.empty:
+            # Entfernt die letzte Zeile
+            updated_df = existing_data.drop(existing_data.index[-1])
+            conn.update(data=updated_df)
+            st.cache_data.clear()
+            return True
+        return False
+    except Exception as e:
+        st.error(f"Fehler beim Löschen: {e}")
+        return False
+
 def save_entry(new_row_dict):
     try:
         existing_data = conn.read(ttl="0s")
@@ -155,3 +169,4 @@ with st.expander("📂 Historie & Filter"):
         sel = st.selectbox("Übung filtern", uebungen)
         disp = data[data['Übung/Info'] == sel] if sel != "Alle" else data
         st.dataframe(disp.sort_values("Datum", ascending=False), use_container_width=True)
+
