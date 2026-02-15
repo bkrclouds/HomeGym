@@ -110,29 +110,22 @@ with st.container(border=True):
     
     st.write("---")
     
-   # 1. Hier definieren wir den Namen: 'mein_gewicht'
-# 1. Die Variable wird hier definiert (Achte auf den Namen vor dem =)
-new_weight = st.number_input("Körpergewicht (kg)", value=113.0, step=0.1, format="%.1f")
+# Die Eingabe darf NICHT zum Rerun führen
+new_weight = st.number_input("Körpergewicht (kg)", value=113.0, step=0.1)
 
-if st.button("⚖️ Gewicht speichern", use_container_width=True):
-    # Alles hierunter MUSS eingerückt sein
-    weight_data_to_save = {
+if st.button("⚖️ Gewicht speichern"):
+    # Nur wenn der Button gedrückt wurde, passiert das Folgende:
+    success = save_entry({
         "Datum": str(date.today()),
         "Typ": "Gewicht",
         "Übung/Info": "Körpergewicht",
-        "Gewicht": new_weight, # Nutzt die Variable von oben
-        "Sätze": 0,
-        "Wiederholungen": 0
-    }
-    
-    # Speichern aufrufen
-    success = save_entry(weight_data_to_save)
+        "Gewicht": new_weight,
+        "Sätze": 0, "Wiederholungen": 0
+    })
     
     if success:
-        # Hier stand der Fehler – jetzt passt der Name 'new_weight' exakt
-        st.toast(f"Gespeichert: {new_weight} kg", icon="⚖️")
-        st.cache_data.clear()
-        st.rerun()
+        st.cache_data.clear() # Cache leeren
+        st.rerun() # NUR HIER darf das rerun stehen!
     
     # Zuerst Daten laden
 data = load_data()
@@ -202,6 +195,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
