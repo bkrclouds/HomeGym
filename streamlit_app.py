@@ -140,7 +140,6 @@ with m3:
     if success:
         st.toast(f"Gespeichert: {new_weight} kg", icon="⚖️")
         st.rerun() # Damit die Anzeige oben sofort springt
-    }
     
     # 2. In Google Sheets speichern
     save_entry(new_data)
@@ -184,6 +183,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
