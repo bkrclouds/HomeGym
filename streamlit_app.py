@@ -86,7 +86,12 @@ else:
 # --- UI: DASHBOARD ---
 st.title("🦾 Iron Hub")
 m1, m2, m3 = st.columns(3)
-with m1: st.metric("Tages-Ziel", "Kreatin", "⏳")
+# Vor der Dashboard-Anzeige die Streak berechnen
+streak_count = get_kreatin_streak(data)
+
+with m1:
+    # Wir zeigen die Flamme und die Anzahl der Tage
+    st.metric("Kreatin-Streak", f"{streak_count} Tage", f"{'🔥' if streak_count > 0 else '❄️'}")
 with m2: 
     diff = last_weight - prev_weight
     st.metric("Gewicht", f"{last_weight} kg", delta=f"{diff:.1f} kg", delta_color="inverse")
@@ -182,4 +187,5 @@ with st.container(border=True):
             st.info("Sammle ein paar Daten, um deine Kurve zu sehen!")
     except Exception as e:
         st.error(f"Diagramm-Fehler: {e}")
+
 
