@@ -110,25 +110,26 @@ with st.container(border=True):
     
     st.write("---")
     
-    # Körpergewicht Eingabe
-    new_weight_input = st.number_input("Körpergewicht (kg)", value=113.0, step=0.1, format="%.1f")
+   # 1. Hier definieren wir den Namen: 'mein_gewicht'
+mein_gewicht = st.number_input("Körpergewicht (kg)", value=113.0, step=0.1, format="%.1f")
+
+if st.button("⚖️ Gewicht speichern", use_container_width=True):
+    weight_entry = {
+        "Datum": str(date.today()),
+        "Typ": "Gewicht",
+        "Übung/Info": "Körpergewicht",
+        "Gewicht": mein_gewicht, # 2. Hier nutzen wir 'mein_gewicht'
+        "Sätze": 0,
+        "Wiederholungen": 0
+    }
     
-    if st.button("⚖️ Gewicht speichern", use_container_width=True):
-        # WICHTIG: Die Variable muss HIER definiert werden, damit sie verfügbar ist
-        weight_data_to_save = {
-            "Datum": str(date.today()),
-            "Typ": "Gewicht",
-            "Übung/Info": "Körpergewicht",
-            "Gewicht": new_weight_input,
-            "Sätze": 0,
-            "Wiederholungen": 0
-        }
-        
-        # Speichern aufrufen
-        if save_entry(weight_data_to_save):
-            st.toast(f"Gespeichert: {new_weight_input} kg", icon="⚖️")
-            st.cache_data.clear()
-            st.rerun()
+    success = save_entry(weight_entry)
+    
+    if success:
+        # 3. Und hier muss exakt der gleiche Name stehen: 'mein_gewicht'
+        st.toast(f"Gespeichert: {mein_gewicht} kg", icon="⚖️")
+        st.cache_data.clear()
+        st.rerun()
     
     # Zuerst Daten laden
 data = load_data()
@@ -198,6 +199,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
