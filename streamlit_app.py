@@ -171,16 +171,33 @@ with m3:
 with col_right:
     st.markdown("### 🏋️‍♂️ Workout Log")
     with st.container(border=True):
-        # Übungsvorgaben nach Kategorien
-        kategorie = st.selectbox("Muskelgruppe", ["Brust", "Rücken", "Beine", "Schultern", "Arme"])
-        
-        uebungen_dict = {
-            "Brust": ["Bankdrücken", "Schrägbankdrücken", "Butterfly"],
-            "Rücken": ["Klimmzüge", "Rudern (Langhantel)", "Latziehen"],
-            "Beine": ["Kniebeugen", "Beinpresse", "Kreuzheben"],
-            "Schultern": ["Schulterdrücken", "Seitheben"],
-            "Arme": ["Bizeps Curls", "Trizeps Drücken"]
-        }
+    st.markdown("### 🏋️‍♂️ Workout Log")
+    
+    # Option A: Freitext-Eingabe für eigene Übungen
+    custom_exercise = st.text_input("Übung (z.B. Bankdrücken oder eigene)")
+    
+    col_a, col_b, col_c = st.columns(3)
+    with col_a:
+        kg = st.number_input("kg", step=2.5)
+    with col_b:
+        sets = st.number_input("Sätze", step=1)
+    with col_c:
+        reps = st.number_input("Reps", step=1)
+
+    if st.button("🔥 Satz speichern", use_container_width=True):
+        if custom_exercise:
+            save_entry({
+                "Datum": str(date.today()),
+                "Typ": "Training",
+                "Übung/Info": custom_exercise,
+                "Gewicht": kg,
+                "Sätze": sets,
+                "Wiederholungen": reps
+            })
+            st.cache_data.clear()
+            st.rerun()
+        else:
+            st.warning("Bitte gib den Namen der Übung ein!")
         
         selected_exercise = st.selectbox("Übung wählen", uebungen_dict[kategorie])
         
@@ -201,6 +218,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
