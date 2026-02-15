@@ -124,7 +124,7 @@ with col_left:
                 st.toast(f"Erfolg: {new_weight} kg gespeichert!", icon="⚖️")
                 st.cache_data.clear() # Gedächtnis löschen
                 st.rerun() # Seite neu laden für die Metrik oben
-    }
+    
     # Zuerst Daten laden
 data = load_data()
 
@@ -193,6 +193,7 @@ with col_right:
 st.write("##")
 with st.expander("📈 Deine Fortschritte"):
     st.write("Hier folgt bald die grafische Auswertung deiner Daten!")
+
 
 
 
