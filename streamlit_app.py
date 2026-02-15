@@ -68,7 +68,7 @@ with col_weight:
 st.divider()
 
 # --- WORKOUT LOG ---
-st.header("📝 Trainingsverlauf")
+st.header("📝 Training")
 exercise = st.text_input("Name der Übung", placeholder="z.B. Bankdrücken")
 
 c1, c2, c3 = st.columns(3)
@@ -110,6 +110,7 @@ if not data.empty:
         st.line_chart(weight_df.set_index("Datum")["Gewicht"])
 else:
     st.info("Noch keine Daten vorhanden. Fang an zu trainieren!")
+
 
 
 
