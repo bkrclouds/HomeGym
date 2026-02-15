@@ -1,0 +1,21 @@
+import streamlit as st
+from streamlit_gsheets import GSheetsConnection
+import pandas as pd
+from datetime import date
+
+st.set_page_config(page_title="Fitness Hub", layout="centered")
+
+# Verbindung zu Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# Daten laden
+df = conn.read(ttl="0s") # ttl=0 sorgt für Echtzeit-Updates
+
+# --- LOGIK ZUM SPEICHERN ---
+def save_to_gsheets(new_row):
+    global df
+    df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
+    conn.update(data=df)
+    st.success("Daten synchronisiert!")
+
+# ... (Hier kommt dein UI-Code von oben rein, nur dass du save_to_gsheets aufrufst)
