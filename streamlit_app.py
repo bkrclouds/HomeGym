@@ -4,9 +4,8 @@ import pandas as pd
 from datetime import date
 import time
 import plotly.express as px
-import random
 
-# --- 1. SEITEN-SETUP & CSS (HIGH CONTRAST) ---
+# --- 1. SEITEN-SETUP & CSS ---
 st.set_page_config(page_title="Iron Hub 2.0", page_icon="🦾", layout="wide")
 
 st.markdown("""
@@ -25,8 +24,6 @@ st.markdown("""
         border: 2px solid #00D4FF; text-align: center; margin-bottom: 20px;
     }
     div[data-testid="stExpander"] { background-color: #1E2129; border-radius: 12px; }
-    
-    /* Roter Button für Löschfunktion */
     .btn-danger button {
         background: linear-gradient(135deg, #FF4B4B 0%, #AF0000 100%) !important;
     }
@@ -36,7 +33,7 @@ st.markdown("""
 # --- 2. VERBINDUNG ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- 3. SESSION STATE INITIALISIERUNG ---
+# --- 3. SESSION STATE ---
 if 'user' not in st.session_state: st.session_state.user = None
 if 'tutorial_done' not in st.session_state: st.session_state.tutorial_done = False
 if 'step' not in st.session_state: st.session_state.step = 1
@@ -112,111 +109,82 @@ if not st.session_state.tutorial_done:
             "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=800"
         ]
         st.image(images[st.session_state.step - 1], use_container_width=True)
-        
-        if st.session_state.step == 1:
-            st.header("Dein neuer Coach")
-            st.write("Ich begleite dich ab jetzt bei jeder Einheit. Iron Hub ist dein digitaler Trainingspartner.")
-        elif st.session_state.step == 2:
-            st.header("Blitzschnelles Logging")
-            st.write("Tracke deine Sätze in Sekunden. So bleibt der Fokus auf den Gains, nicht auf dem Handy.")
-        elif st.session_state.step == 3:
-            st.header("Dein individueller Plan")
-            st.write("Stell dir deinen Plan zusammen. Deine Lieblingsübungen sind immer griffbereit.")
-        elif st.session_state.step == 4:
-            st.header("Der Kreatin-Tracker 💊")
-            st.write("Unser Herzstück! Keine andere App trackt deinen Kreatin-Streak so motivierend.")
-        elif st.session_state.step == 5:
-            st.header("Bereit?")
-            st.write("Dein Profil wird gleich erstellt. Let's go!")
-
+        st.header(["Dein neuer Coach", "Logging", "Plan", "Kreatin", "Bereit?"][st.session_state.step-1])
+        st.write(["Begleitung bei jeder Einheit.", "Tracke in Sekunden.", "Stell dir deinen Plan zusammen.", "Verpasse nie den Streak.", "Let's Go!"][st.session_state.step-1])
         st.markdown('</div>', unsafe_allow_html=True)
-        c_back, c_next = st.columns(2)
+        c1, c2 = st.columns(2)
         if st.session_state.step > 1:
-            if c_back.button("Zurück"):
-                st.session_state.step -= 1
-                st.rerun()
+            if c1.button("Zurück"): st.session_state.step -= 1; st.rerun()
         if st.session_state.step < 5:
-            if c_next.button("Weiter"):
-                st.session_state.step += 1
-                st.rerun()
+            if c2.button("Weiter"): st.session_state.step += 1; st.rerun()
         else:
-            if c_next.button("TUTORIAL BEENDEN & STARTEN 🚀"):
-                st.session_state.tutorial_done = True
-                st.rerun()
+            if c2.button("STARTEN 🚀"): st.session_state.tutorial_done = True; st.rerun()
     st.stop()
 
 # --- 7. DASHBOARD LOGIK ---
 current_user = st.session_state.user
 data = full_data[full_data['Email'] == current_user] if not full_data.empty else pd.DataFrame()
 
-# Animationen
 if st.session_state.trigger_balloons: st.balloons(); st.session_state.trigger_balloons = False
 if st.session_state.trigger_snow: st.snow(); st.session_state.trigger_snow = False
 
-# Erstmaliges Einrichten
 if data.empty:
     st.header(f"Dein Profil einrichten 🦾")
-    with st.form("first_setup"):
+    with st.form("setup"):
         c1, c2 = st.columns(2)
-        groesse = c1.number_input("Größe (cm)", value=180)
-        s_weight = c1.number_input("Gewicht (kg)", value=80.0)
-        z_weight = c2.number_input("Ziel (kg)", value=75.0)
+        g = c1.number_input("Größe", value=180); w = c1.number_input("Gewicht", value=80.0); zw = c2.number_input("Ziel", value=75.0)
         if st.form_submit_button("Profil speichern"):
-            save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": f"Start: {groesse}cm", "Gewicht": s_weight, "Sätze": 0, "Wiederholungen": 0, "Ziel": z_weight}, current_user)
-            st.session_state.trigger_balloons = True
+            save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": "Start", "Gewicht": w, "Sätze": 0, "Wiederholungen": 0, "Ziel": zw}, current_user)
             st.rerun()
     st.stop()
 
-# --- DATEN BERECHNEN ---
+# DATEN BERECHNEN
 streak = get_kreatin_streak(data)
-weights = data[data['Typ'] == 'Gewicht']
-last_weight = float(weights['Gewicht'].iloc[-1]) if not weights.empty else 0.0
+weights_df = data[data['Typ'] == 'Gewicht'].copy()
+weights_df['Datum'] = pd.to_datetime(weights_df['Datum'])
+weights_df = weights_df.sort_values('Datum')
+
+last_weight = float(weights_df['Gewicht'].iloc[-1]) if not weights_df.empty else 0.0
+start_weight = float(weights_df['Gewicht'].iloc[0]) if not weights_df.empty else 0.0
 ziel_gewicht = float(data['Ziel'].dropna().iloc[0]) if 'Ziel' in data.columns and not data['Ziel'].dropna().empty else 0.0
+diff = last_weight - start_weight
 wasser_heute = data[(data['Typ'] == 'Wasser') & (data['Datum'] == str(date.today()))]['Gewicht'].sum()
 mein_plan = data[data['Typ'] == 'Plan']['Übung/Info'].unique().tolist()
 
-# --- HEADER MIT ZAHNRAD ---
-head_left, head_right = st.columns([0.1, 0.9])
-if head_left.button("⚙️"):
-    st.session_state.show_settings = not st.session_state.show_settings
+# --- HEADER & SETTINGS ---
+c_h1, c_h2 = st.columns([0.9, 0.1])
+if c_h2.button("⚙️"): st.session_state.show_settings = not st.session_state.show_settings
 
-# --- EINSTELLUNGEN OVERLAY ---
 if st.session_state.show_settings:
     with st.container(border=True):
-        st.subheader("⚙️ Einstellungen & Datenschutz")
-        st.write(f"Angemeldet als: **{current_user}**")
-        if st.button("Abmelden"):
-            st.session_state.user = None
-            st.session_state.show_settings = False
-            st.rerun()
-        
-        st.write("---")
-        st.subheader("⚠️ Daten löschen")
-        st.write("Du kannst dein Konto und alle deine Trainingsdaten hier dauerhaft löschen.")
-        confirm = st.text_input("Bestätige mit 'LÖSCHEN':")
+        if st.button("Abmelden"): st.session_state.user = None; st.rerun()
+        confirm = st.text_input("Löschen bestätigen mit 'LÖSCHEN'")
         st.markdown('<div class="btn-danger">', unsafe_allow_html=True)
-        if st.button("MEINEN ACCOUNT LÖSCHEN"):
-            if confirm == "LÖSCHEN":
-                if delete_user_data(current_user):
-                    st.session_state.user = None
-                    st.session_state.show_settings = False
-                    st.rerun()
+        if st.button("KONTO LÖSCHEN"):
+            if confirm == "LÖSCHEN": delete_user_data(current_user); st.session_state.user = None; st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
-        st.write("---")
-        if st.button("Schließen"):
-            st.session_state.show_settings = False
-            st.rerun()
-    st.stop() # Stoppt hier, wenn Einstellungen offen sind
+        if st.button("Schließen"): st.session_state.show_settings = False; st.rerun()
+    st.stop()
 
 # --- UI DASHBOARD ---
 st.title(f"🦾 Iron Hub: {current_user}")
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Kreatin-Streak", f"{streak} Tage", "🔥")
-m2.metric("Gewicht", f"{last_weight} kg")
+m2.metric("Gewicht", f"{last_weight} kg", f"{diff:.1f} kg")
 m3.metric("Wasser", f"{wasser_heute} L", "💧")
 m4.metric("Ziel", f"{ziel_gewicht} kg", "🎯")
 
 st.write("---")
+
+# --- GEWICHTS-DASHBOARD (GRAFIK) ---
+with st.expander("📈 Gewichtsverlauf & Statistik", expanded=True):
+    if not weights_df.empty:
+        fig = px.line(weights_df, x='Datum', y='Gewicht', title="Dein Weg zum Ziel", markers=True)
+        fig.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+        fig.update_traces(line_color='#00D4FF')
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Noch keine Gewichtsdaten vorhanden.")
 
 col_l, col_r = st.columns([1, 1.8], gap="large")
 
@@ -224,39 +192,31 @@ with col_l:
     with st.container(border=True):
         st.subheader("🍎 Daily Habits")
         if st.button("💊 Kreatin genommen"):
-            if save_entry({"Datum": str(date.today()), "Typ": "Kreatin", "Übung/Info": "5g", "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0}, current_user):
-                st.session_state.trigger_balloons = True
-                st.rerun()
-        st.write("---")
+            save_entry({"Datum": str(date.today()), "Typ": "Kreatin", "Übung/Info": "5g", "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0}, current_user)
+            st.session_state.trigger_balloons = True; st.rerun()
         st.write(f"💧 Wasser: {wasser_heute}L / 3L")
         st.progress(min(wasser_heute / 3.0, 1.0))
         if st.button("+ 0.5L Wasser"):
-            save_entry({"Datum": str(date.today()), "Typ": "Wasser", "Übung/Info": "Wasser", "Gewicht": 0.5, "Sätze": 0, "Wiederholungen": 0}, current_user)
+            save_entry({"Datum": str(date.today()), "Typ": "Wasser", "Übung/Info": "Wasser", "Gewicht": 0.5, "Sätze": 0, "Wiederholungen": 0}, current_user); st.rerun()
+        new_w = st.number_input("Gewicht", value=last_weight, step=0.1)
+        if st.button("⚖️ Speichern"):
+            save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": "Check", "Gewicht": new_w, "Sätze": 0, "Wiederholungen": 0}, current_user)
+            if new_w < last_weight: st.session_state.trigger_snow = True
             st.rerun()
-        st.write("---")
-        new_w = st.number_input("Körpergewicht", value=last_weight, step=0.1)
-        if st.button("⚖️ Gewicht speichern"):
-            if save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": "Check", "Gewicht": new_w, "Sätze": 0, "Wiederholungen": 0}, current_user):
-                if new_w < last_weight: st.session_state.trigger_snow = True
-                st.rerun()
 
     with st.container(border=True):
         st.subheader("📋 Mein Plan")
         for ex in mein_plan:
             cl1, cl2 = st.columns([4,1])
-            if cl1.button(f"🏋️ {ex}", key=f"pl_{ex}"):
-                st.session_state.selected_ex = ex
-                st.rerun()
-            if cl2.button("❌", key=f"rm_{ex}"):
-                # Hier könnte Löschfunktion für einzelne Plan-Übungen stehen
-                st.rerun()
+            if cl1.button(f"🏋️ {ex}", key=f"pl_{ex}"): st.session_state.selected_ex = ex; st.rerun()
+            if cl2.button("❌", key=f"rm_{ex}"): st.rerun()
 
 with col_r:
     with st.container(border=True):
         st.subheader("🏋️‍♂️ Workout Log")
-        with st.expander("📚 Katalog & Plan"):
-            tabs = st.tabs(["Push", "Pull", "Legs/Core"])
-            katalog = {"Push": ["Bankdrücken", "Schulterdrücken", "Dips", "Seitheben"], "Pull": ["Klimmzüge", "Rudern", "Latzug", "Bizeps"], "Legs/Core": ["Kniebeugen", "Beinpresse", "Plank"]}
+        with st.expander("📚 Katalog"):
+            tabs = st.tabs(["Push", "Pull", "Legs"])
+            katalog = {"Push": ["Bankdrücken", "Schulterdrücken", "Dips"], "Pull": ["Klimmzüge", "Rudern", "Latzug"], "Legs": ["Kniebeugen", "Beinpresse"]}
             for i, (cat, items) in enumerate(katalog.items()):
                 with tabs[i]:
                     for n in items:
@@ -264,22 +224,11 @@ with col_r:
                         c1.write(f"**{n}**")
                         if c2.button("Log", key=f"l_{n}"): st.session_state.selected_ex = n; st.rerun()
                         if c3.button("📌 Plan", key=f"a_{n}"):
-                            save_entry({"Datum": "PLAN", "Typ": "Plan", "Übung/Info": n, "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0}, current_user)
-                            st.toast(f"{n} im Plan!"); time.sleep(0.5); st.rerun()
+                            save_entry({"Datum": "PLAN", "Typ": "Plan", "Übung/Info": n, "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0}, current_user); st.rerun()
 
         u_name = st.text_input("Übung", value=st.session_state.selected_ex)
         c_kg, c_s, c_r = st.columns(3)
-        u_kg = c_kg.number_input("kg", step=2.5, value=0.0)
-        u_s = c_s.number_input("Sätze", step=1, value=3)
-        u_r = c_r.number_input("Reps", step=1, value=10)
+        u_kg = c_kg.number_input("kg", step=2.5, value=0.0); u_s = c_s.number_input("Sätze", value=3); u_r = c_r.number_input("Reps", value=10)
         if st.button("🚀 SATZ SPEICHERN"):
-            if u_name:
-                save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}, current_user)
-                st.session_state.selected_ex = ""
-                st.rerun()
-
-with st.sidebar:
-    st.write(f"👤 **{current_user}**")
-    if st.button("Abmelden", key="side_logout"):
-        st.session_state.user = None
-        st.rerun()
+            save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}, current_user)
+            st.session_state.selected_ex = ""; st.rerun()
