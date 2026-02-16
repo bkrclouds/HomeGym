@@ -7,7 +7,7 @@ import plotly.express as px
 import random
 
 # --- 1. SEITEN-SETUP & CSS (HIGH CONTRAST) ---
-st.set_page_config(page_title="Iron Hub 2.0", page_icon="🦾", layout="wide")
+st.set_page_config(page_title="Iron Hub", page_icon="🦾", layout="wide")
 
 st.markdown("""
     <style>
@@ -213,3 +213,4 @@ elif page == "Einstellungen":
             else:
                 st.warning("Bitte gib 'LÖSCHEN' ein, um zu bestätigen.")
         st.markdown('</div>', unsafe_allow_html=True)
+
