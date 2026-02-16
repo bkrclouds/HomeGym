@@ -96,12 +96,11 @@ if st.session_state.user is None:
                 st.rerun()
     st.stop()
 
-# --- 6. TUTORIAL (WICHTIG: KEINE LOKALEN BILDER) ---
+# --- 6. TUTORIAL ---
 if not st.session_state.tutorial_done:
     st.title(f"Schön dich kennenzulernen, {st.session_state.user}!")
     with st.container():
         st.markdown('<div class="onboarding-card">', unsafe_allow_html=True)
-        # Nutze hier nur öffentliche Web-URLs für Bilder, keine lokalen Pfade!
         images = [
             "https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=800",
             "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800",
@@ -157,12 +156,30 @@ if c_h2.button("⚙️"): st.session_state.show_settings = not st.session_state.
 
 if st.session_state.show_settings:
     with st.container(border=True):
+        st.subheader("Einstellungen")
         if st.button("Abmelden"): st.session_state.user = None; st.rerun()
-        confirm = st.text_input("Account löschen? Tippe 'LÖSCHEN'")
-        st.markdown('<div class="btn-danger">', unsafe_allow_html=True)
-        if st.button("KONTO LÖSCHEN"):
-            if confirm == "LÖSCHEN": delete_user_data(current_user); st.session_state.user = None; st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+        
+        # Datenschutz Sektion
+        with st.expander("🛡️ Datenschutz"):
+            st.write("""
+            **Allgemeiner Datenschutz:**
+            Deine Daten werden ausschließlich zur Darstellung deines Trainingsfortschritts in dieser App verwendet. 
+            Wir speichern dein Gewicht, deine Trainingseinheiten und deinen Kreatin-Status in einer gesicherten Datenbank.
+            Deine Daten werden nicht an Dritte weitergegeben.
+            """)
+        
+        # Account löschen Sektion
+        with st.expander("🗑️ Account löschen"):
+            st.warning("Achtung: Dies löscht alle deine Fortschritte unwiderruflich.")
+            confirm = st.text_input("Tippe 'LÖSCHEN' zur Bestätigung:")
+            st.markdown('<div class="btn-danger">', unsafe_allow_html=True)
+            if st.button("MEINEN ACCOUNT JETZT LÖSCHEN"):
+                if confirm == "LÖSCHEN": 
+                    delete_user_data(current_user)
+                    st.session_state.user = None
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
         if st.button("Schließen"): st.session_state.show_settings = False; st.rerun()
     st.stop()
 
