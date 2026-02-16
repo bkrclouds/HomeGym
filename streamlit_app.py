@@ -3,6 +3,7 @@ from streamlit_gsheets import GSheetsConnection
 import pandas as pd
 from datetime import date
 import plotly.express as px
+import time  # Wichtig für die Ballon-Verzögerung
 
 # --- 1. SEITEN-SETUP & CSS ---
 st.set_page_config(page_title="Iron Hub", page_icon="🦾", layout="wide")
@@ -126,7 +127,6 @@ last_w = float(weights_df['Gewicht'].iloc[-1]) if not weights_df.empty else 0.0
 start_w = float(weights_df['Gewicht'].iloc[0]) if not weights_df.empty else 0.0
 ziel_w = float(user_df['Ziel'].dropna().iloc[0]) if 'Ziel' in user_df.columns and not user_df['Ziel'].dropna().empty else 0.0
 wasser_heute = user_df[(user_df['Typ'] == 'Wasser') & (user_df['Datum'] == str(date.today()))]['Gewicht'].sum()
-mein_plan = user_df[user_df['Typ'] == 'Plan']['Übung/Info'].unique().tolist()
 
 # --- 8. SETTINGS ---
 c_h1, c_h2 = st.columns([0.9, 0.1])
@@ -174,7 +174,9 @@ with col_l:
         st.subheader("🍎 Daily Habits")
         if st.button("💊 Kreatin genommen"):
             save_entry({"Datum": str(date.today()), "Typ": "Kreatin", "Übung/Info": "5g", "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0}, current_user)
-            st.balloons(); st.rerun()
+            st.balloons()
+            time.sleep(1.5) # Verzögerung, damit die Ballons fliegen können
+            st.rerun()
         st.progress(min(wasser_heute / 3.0, 1.0), text=f"Wasser: {wasser_heute}L / 3L")
         if st.button("+ 0.5L Wasser"):
             save_entry({"Datum": str(date.today()), "Typ": "Wasser", "Übung/Info": "Glas", "Gewicht": 0.5, "Sätze": 0, "Wiederholungen": 0}, current_user); st.rerun()
