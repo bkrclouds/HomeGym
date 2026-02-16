@@ -32,7 +32,13 @@ st.markdown("""
 # --- 2. VERBINDUNG ---
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-# --- 3. SESSION STATE ---
+# --- 3. RELOAD-SCHUTZ & SESSION STATE ---
+# Prüft ob User in der URL steht (verhindert Logout beim Swipen/Reload)
+query_params = st.query_params
+if "u" in query_params and st.session_state.get("user") is None:
+    st.session_state.user = query_params["u"]
+    st.session_state.tutorial_done = True
+
 for key, default in [('user', None), ('tutorial_done', False), ('step', 1), 
                      ('selected_ex', ""), ('show_settings', False)]:
     if key not in st.session_state: st.session_state[key] = default
@@ -83,6 +89,7 @@ if st.session_state.user is None:
             if name_input:
                 name_clean = name_input.strip()
                 st.session_state.user = name_clean
+                st.query_params["u"] = name_clean # Speichert User in URL
                 user_exists = name_clean in full_data['Email'].values if not full_data.empty else False
                 st.session_state.tutorial_done = user_exists
                 st.rerun()
@@ -136,6 +143,12 @@ ziel_w = float(user_df['Ziel'].dropna().iloc[0]) if 'Ziel' in user_df.columns an
 wasser_heute = user_df[(user_df['Typ'] == 'Wasser') & (user_df['Datum'] == str(date.today()))]['Gewicht'].sum()
 mein_plan = user_df[user_df['Typ'] == 'Plan']['Übung/Info'].unique().tolist()
 
+# PR LOGIK (Bestleistungen extrahieren)
+def get_pr(uebung):
+    if user_df.empty: return 0.0
+    ex_data = user_df[(user_df['Typ'] == 'Training') & (user_df['Übung/Info'] == uebung)]
+    return ex_data['Gewicht'].max() if not ex_data.empty else 0.0
+
 # SETTINGS
 c_h1, c_h2 = st.columns([0.9, 0.1])
 if c_h2.button("⚙️"): st.session_state.show_settings = not st.session_state.show_settings
@@ -143,14 +156,21 @@ if c_h2.button("⚙️"): st.session_state.show_settings = not st.session_state.
 if st.session_state.show_settings:
     with st.container(border=True):
         st.subheader("Einstellungen")
-        if st.button("Abmelden"): st.session_state.user = None; st.rerun()
+        if st.button("Abmelden"): 
+            st.session_state.user = None
+            st.query_params.clear()
+            st.rerun()
         with st.expander("🛡️ Datenschutz"):
             st.write("Deine Daten liegen verschlüsselt in Deinem privaten Google Sheet. Wir geben nichts weiter.")
         with st.expander("🗑️ Account löschen"):
             st.warning("Das löscht alle Einträge unwiderruflich!")
             confirm = st.text_input("Tippe 'LÖSCHEN':")
             if st.button("JETZT LÖSCHEN", key="del_btn"):
-                if confirm == "LÖSCHEN": delete_user_data(current_user); st.session_state.user = None; st.rerun()
+                if confirm == "LÖSCHEN": 
+                    delete_user_data(current_user)
+                    st.session_state.user = None
+                    st.query_params.clear()
+                    st.rerun()
         if st.button("Schließen"): st.session_state.show_settings = False; st.rerun()
     st.stop()
 
@@ -158,9 +178,9 @@ if st.session_state.show_settings:
 st.title(f"🦾 Iron Hub: {current_user}")
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Streak", f"{streak} Tage", "🔥")
-m2.metric("Gewicht", f"{last_w} kg", f"{last_w - start_w:+.1f} kg")
-m3.metric("Wasser", f"{wasser_heute} L", "💧")
-m4.metric("Ziel", f"{ziel_w} kg", "🎯")
+m2.metric("PR Bank", f"{get_pr('Bankdrücken')} kg", "🚀")
+m3.metric("PR Beugen", f"{get_pr('Kniebeugen')} kg", "💥")
+m4.metric("Gewicht", f"{last_w} kg", f"{last_w - start_w:+.1f} kg")
 st.write("---")
 
 col_l, col_r = st.columns([1, 1.8], gap="large")
@@ -176,14 +196,12 @@ with col_l:
             save_entry({"Datum": str(date.today()), "Typ": "Wasser", "Übung/Info": "Glas", "Gewicht": 0.5, "Sätze": 0, "Wiederholungen": 0}, current_user); st.rerun()
         
         st.write("---")
-        # Mein Plan Sektion
         st.subheader("📋 Mein Plan")
         if not mein_plan: st.info("Füge Übungen aus dem Katalog hinzu!")
         for ex in mein_plan:
             cl1, cl2 = st.columns([4,1])
             if cl1.button(f"🏋️ {ex}", key=f"plan_{ex}"): st.session_state.selected_ex = ex; st.rerun()
             if cl2.button("🗑️", key=f"del_{ex}"):
-                # Hier müsste eine Logik zum Löschen aus dem Plan hin (einfachheitshalber hier übersprungen)
                 pass
 
 with col_r:
