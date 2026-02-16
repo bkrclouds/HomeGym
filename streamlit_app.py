@@ -67,12 +67,12 @@ if 'selected_ex' not in st.session_state:
 if 'ex_info' not in st.session_state:
     st.session_state.ex_info = ""
 
-# --- 5. ANMELDUNG (WIRD ALS ERSTES ANGEZEIGT) ---
+# --- 5. ANMELDUNG ---
 if "user" not in st.session_state or not st.session_state.user:
     st.title("🦾 Iron Hub")
     with st.container(border=True):
         st.subheader("Anmeldung")
-        user_input = st.text_input("Gib deinen Namen ein:", placeholder="Wer trainiert heute?")
+        user_input = st.text_input("Gib deinen Namen ein:", placeholder="Dein Name...")
         if st.button("Einloggen"):
             if user_input:
                 st.session_state.user = user_input.strip()
@@ -85,9 +85,9 @@ current_user = st.session_state.user
 user_exists = not full_data.empty and current_user in full_data['Email'].values if 'Email' in full_data.columns else False
 
 if not user_exists:
-    st.header(f"Willkommen im Team, {current_user}! 🦾")
+    st.header(f"Willkommen, {current_user}! 🦾")
     with st.form("onboarding"):
-        st.write("Bitte richte kurz dein Profil ein:")
+        st.write("Dein Profil einmalig einrichten:")
         c1, c2 = st.columns(2)
         groesse = c1.number_input("Größe (cm)", value=180)
         s_weight = c1.number_input("Startgewicht (kg)", value=80.0)
@@ -100,39 +100,55 @@ if not user_exists:
                 st.rerun()
     st.stop()
 
-# --- 6. DASHBOARD DATEN ---
+# --- 6. DATEN FILTERN ---
 data = full_data[full_data['Email'] == current_user]
 streak = get_kreatin_streak(data)
 weights = data[data['Typ'] == 'Gewicht']
 last_weight = float(weights['Gewicht'].iloc[-1]) if not weights.empty else 0.0
-last_workout = data[data['Typ'] == 'Training']['Übung/Info'].iloc[-1] if not data[data['Typ'] == 'Training'].empty else "Noch kein Training"
+last_workout = data[data['Typ'] == 'Training']['Übung/Info'].iloc[-1] if not data[data['Typ'] == 'Training'].empty else "Kein Training"
 ziel_gewicht = float(data['Ziel'].dropna().iloc[0]) if 'Ziel' in data.columns and not data['Ziel'].dropna().empty else 0.0
 
-# --- 7. DASHBOARD ANZEIGE (METRIKEN) ---
+# Wasser-Daten berechnen
+wasser_heute = data[(data['Typ'] == 'Wasser') & (data['Datum'] == str(date.today()))]['Gewicht'].sum()
+
+# --- 7. DASHBOARD ANZEIGE ---
 st.title(f"🦾 Iron Hub Dashboard")
-m1, m2, m3 = st.columns(3)
+m1, m2, m3, m4 = st.columns(4)
 m1.metric("Kreatin-Streak", f"{streak} Tage", "🔥")
 m2.metric("Gewicht", f"{last_weight} kg")
-m3.metric("Letzte Übung", last_workout, "💪")
+m3.metric("Wasser heute", f"{wasser_heute} L", "💧")
+m4.metric("Letztes Training", last_workout, "💪")
 
 st.write("---")
 
-# --- 8. HAUPTBEREICH: HABITS ZUERST ---
+# --- 8. HAUPTBEREICH ---
 col_left, col_right = st.columns([1, 1.5], gap="large")
 
 with col_left:
-    # DAILY HABITS KACHEL (JETZT OBEN)
+    # DAILY HABITS
     with st.container(border=True):
         st.subheader("🍎 Daily Habits")
-        st.write("Tracke deine täglichen Erfolge:")
         
+        # Kreatin
         if st.button("💊 Kreatin genommen"):
             if save_entry({"Datum": str(date.today()), "Typ": "Kreatin", "Übung/Info": "5g", "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0}, current_user):
                 st.balloons()
-                time.sleep(1)
                 st.rerun()
         
         st.write("---")
+        
+        # Wasser Tracker
+        st.write("💧 **Wasser Tracker**")
+        w_add = st.number_input("Wasser hinzufügen (Liter)", value=0.5, step=0.1)
+        if st.button("Trinken! 🥤"):
+            if save_entry({"Datum": str(date.today()), "Typ": "Wasser", "Übung/Info": "Wasser", "Gewicht": w_add, "Sätze": 0, "Wiederholungen": 0}, current_user):
+                st.toast(f"{w_add}L Wasser hinzugefügt!")
+                time.sleep(0.5)
+                st.rerun()
+        
+        st.write("---")
+        
+        # Gewicht
         new_w = st.number_input("Heutiges Gewicht (kg)", value=last_weight, step=0.1)
         if st.button("⚖️ Gewicht speichern"):
             if save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": "Check", "Gewicht": new_w, "Sätze": 0, "Wiederholungen": 0}, current_user):
@@ -140,9 +156,9 @@ with col_left:
                     st.snow()
                 st.rerun()
 
-    # GRAFIK UNTER DEN HABITS
+    # GEWICHTSVERLAUF
     with st.container(border=True):
-        st.subheader("📈 Gewichtsverlauf")
+        st.subheader("📈 Verlauf")
         if not weights.empty:
             df_p = weights.copy()
             df_p['Datum'] = pd.to_datetime(df_p['Datum'])
@@ -152,11 +168,10 @@ with col_left:
             st.plotly_chart(fig, use_container_width=True)
 
 with col_right:
-    # WORKOUT LOG KACHEL
+    # WORKOUT LOG
     with st.container(border=True):
         st.subheader("🏋️‍♂️ Workout Log")
         
-        # Katalog zum Auswählen
         with st.expander("📚 Übungskatalog & Anleitung"):
             t1, t2, t3 = st.tabs(["Push", "Pull", "Legs/Core"])
             
@@ -212,35 +227,33 @@ with col_right:
             with t2: render_list(katalog["Pull"])
             with t3: render_list(katalog["Legs/Core"])
 
-        # Eingabemaske
         u_name = st.text_input("Übung", value=st.session_state.selected_ex)
         if st.session_state.ex_info:
-            st.caption(f"💡 Info: {st.session_state.ex_info}")
+            st.caption(f"💡 Anleitung: {st.session_state.ex_info}")
             
         c1, c2, c3 = st.columns(3)
         u_kg = c1.number_input("Gewicht (kg)", step=2.5, value=0.0)
         u_s = c2.number_input("Sätze", step=1, value=3)
-        u_r = c3.number_input("Reps", step=1, value=10)
+        u_r = c3.number_input("Wiederholungen", step=1, value=10)
         
         if st.button("🚀 SATZ SPEICHERN"):
             if u_name:
                 if save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}, current_user):
-                    st.toast("BOOM! ⚡️ Eintrag gespeichert!", icon="⚡")
+                    st.toast("BOOM! ⚡️ Abgeliefert!", icon="⚡")
                     st.session_state.selected_ex = ""
                     st.session_state.ex_info = ""
                     time.sleep(1)
                     st.rerun()
 
-# --- 9. SIDEBAR (LOGOUT & CLEANUP) ---
+# --- 9. SIDEBAR ---
 with st.sidebar:
     st.write(f"Nutzer: **{current_user}**")
     if st.button("Abmelden"):
         st.session_state.user = ""
         st.rerun()
     st.write("---")
-    st.warning("Gefahrenzone")
     if st.button("🗑️ Letzten Eintrag löschen"):
         if delete_last_entry():
-            st.success("Eintrag gelöscht!")
+            st.success("Gelöscht!")
             time.sleep(1)
             st.rerun()
