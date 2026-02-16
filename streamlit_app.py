@@ -71,7 +71,20 @@ def get_kreatin_streak(df):
         else: break
     return streak
 
-# --- 5. LOGIN ---
+# --- 5. ANLEITUNGEN DATENBANK ---
+ANLEITUNGEN = {
+    "Bankdrücken": "Flach auf die Bank, Augen unter die Stange. Griff etwas weiter als Schulterbreit. Stange zur Brust führen und explosiv hochdrücken.",
+    "Schulterdrücken": "Aufrecht sitzen, Hanteln auf Schulterhöhe. Nach oben drücken, ohne die Ellenbogen einzurasten. Bauch fest!",
+    "Dips": "An Barren stützen, Oberkörper leicht vor. Tief gehen, bis Oberarme parallel zum Boden, dann kraftvoll hoch.",
+    "Klimmzüge": "Hände weit greifen. Brust zur Stange ziehen, Schulterblätter aktiv zusammenführen.",
+    "Rudern": "Rücken gerade, Griff zum Bauchnabel ziehen. Schultern hinten zusammenkneifen.",
+    "Latzug": "Breiter Griff, Stange zur oberen Brust ziehen. Fokus auf den Latmuskel.",
+    "Kniebeugen": "Rücken gerade, Gewicht auf die Fersen. Tief gehen, als ob man sich setzt. Knie stabil.",
+    "Beinpresse": "Füße schulterbreit. Drücken, aber Knie NIE ganz durchstrecken!",
+    "Waden": "Auf Zehenspitzen drücken, oben kurz halten, dann weit nach unten dehnen."
+}
+
+# --- 6. LOGIN ---
 full_data = conn.read(ttl="1m")
 
 if st.session_state.user is None:
@@ -86,28 +99,6 @@ if st.session_state.user is None:
                 user_exists = name_clean in full_data['Email'].values if not full_data.empty else False
                 st.session_state.tutorial_done = user_exists
                 st.rerun()
-    st.stop()
-
-# --- 6. TUTORIAL ---
-if not st.session_state.tutorial_done:
-    st.title(f"Willkommen, {st.session_state.user}!")
-    with st.container():
-        st.markdown('<div class="onboarding-card">', unsafe_allow_html=True)
-        images = ["https://images.unsplash.com/photo-1594381898411-846e7d193883?w=800",
-                  "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?w=800",
-                  "https://images.unsplash.com/photo-1434682881908-b43d0467b798?w=800",
-                  "https://images.unsplash.com/photo-1593079831268-3381b0db4a77?w=800",
-                  "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=800"]
-        st.image(images[st.session_state.step - 1], use_container_width=True)
-        st.header(["Iron Hub", "Tracking", "Dein Plan", "Kreatin", "Ready?"][st.session_state.step-1])
-        st.write(["Dein digitaler Gym-Partner.", "Logge Sätze in Sekunden.", "Erstelle deinen eigenen Plan.", "Verpasse nie deinen Streak.", "Starte jetzt deine Reise!"][st.session_state.step-1])
-        st.markdown('</div>', unsafe_allow_html=True)
-        c1, c2 = st.columns(2)
-        if st.session_state.step > 1 and c1.button("Zurück"): st.session_state.step -= 1; st.rerun()
-        if st.session_state.step < 5:
-            if c2.button("Weiter"): st.session_state.step += 1; st.rerun()
-        else:
-            if c2.button("STARTEN 🚀"): st.session_state.tutorial_done = True; st.rerun()
     st.stop()
 
 # --- 7. DASHBOARD DATEN ---
@@ -136,7 +127,7 @@ ziel_w = float(user_df['Ziel'].dropna().iloc[0]) if 'Ziel' in user_df.columns an
 wasser_heute = user_df[(user_df['Typ'] == 'Wasser') & (user_df['Datum'] == str(date.today()))]['Gewicht'].sum()
 mein_plan = user_df[user_df['Typ'] == 'Plan']['Übung/Info'].unique().tolist()
 
-# SETTINGS
+# SETTINGS BUTTON
 c_h1, c_h2 = st.columns([0.9, 0.1])
 if c_h2.button("⚙️"): st.session_state.show_settings = not st.session_state.show_settings
 
@@ -144,13 +135,6 @@ if st.session_state.show_settings:
     with st.container(border=True):
         st.subheader("Einstellungen")
         if st.button("Abmelden"): st.session_state.user = None; st.rerun()
-        with st.expander("🛡️ Datenschutz"):
-            st.write("Deine Daten liegen verschlüsselt in Deinem privaten Google Sheet. Wir geben nichts weiter.")
-        with st.expander("🗑️ Account löschen"):
-            st.warning("Das löscht alle Einträge unwiderruflich!")
-            confirm = st.text_input("Tippe 'LÖSCHEN':")
-            if st.button("JETZT LÖSCHEN", key="del_btn"):
-                if confirm == "LÖSCHEN": delete_user_data(current_user); st.session_state.user = None; st.rerun()
         if st.button("Schließen"): st.session_state.show_settings = False; st.rerun()
     st.stop()
 
@@ -176,15 +160,11 @@ with col_l:
             save_entry({"Datum": str(date.today()), "Typ": "Wasser", "Übung/Info": "Glas", "Gewicht": 0.5, "Sätze": 0, "Wiederholungen": 0}, current_user); st.rerun()
         
         st.write("---")
-        # Mein Plan Sektion
-        st.subheader("📋 Mein Plan")
-        if not mein_plan: st.info("Füge Übungen aus dem Katalog hinzu!")
-        for ex in mein_plan:
-            cl1, cl2 = st.columns([4,1])
-            if cl1.button(f"🏋️ {ex}", key=f"plan_{ex}"): st.session_state.selected_ex = ex; st.rerun()
-            if cl2.button("🗑️", key=f"del_{ex}"):
-                # Hier müsste eine Logik zum Löschen aus dem Plan hin (einfachheitshalber hier übersprungen)
-                pass
+        st.subheader("⚖️ Gewicht loggen")
+        new_weight = st.number_input("Aktuelles Gewicht (kg)", value=last_w, step=0.1)
+        if st.button("Gewicht speichern"):
+            save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": "Update", "Gewicht": new_weight, "Sätze": 0, "Wiederholungen": 0, "Ziel": ziel_w}, current_user)
+            st.success("Gewicht aktualisiert!"); st.rerun()
 
 with col_r:
     with st.container(border=True):
@@ -198,10 +178,9 @@ with col_r:
                 with tabs[i]:
                     for n in items:
                         c1, c2, c3 = st.columns([2, 1, 1])
-                        c1.write(n)
-                        if c2.button("Log", key=f"cat_l_{n}"): st.session_state.selected_ex = n; st.rerun()
-                        if c3.button("📌 Plan", key=f"cat_p_{n}"):
-                            save_entry({"Datum": "PLAN", "Typ": "Plan", "Übung/Info": n, "Gewicht": 0, "Sätze": 0, "Wiederholungen": 0}, current_user); st.rerun()
+                        c1.write(f"**{n}**")
+                        if c2.button("📖 Info", key=f"info_{n}"): st.info(ANLEITUNGEN.get(n, "Keine Info verfügbar."))
+                        if c3.button("Wählen", key=f"cat_l_{n}"): st.session_state.selected_ex = n; st.rerun()
 
         u_name = st.text_input("Übung", value=st.session_state.selected_ex)
         c_kg, c_s, c_r = st.columns(3)
@@ -219,4 +198,3 @@ with st.container(border=True):
         fig.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color="white", margin=dict(l=0, r=0, t=20, b=0))
         fig.update_traces(line_color='#00D4FF', marker=dict(size=8))
         st.plotly_chart(fig, use_container_width=True)
-    else: st.info("Trage dein Gewicht an mehreren Tagen ein, um den Verlauf zu sehen.")
