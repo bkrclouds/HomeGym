@@ -27,6 +27,9 @@ def save_entry(new_row_dict):
         st.error(f"Fehler beim Speichern: {e}")
         return False
 
+# In der save_entry Funktion:
+new_row_dict["Email"] = current_user # Füge dies hinzu
+
 def delete_last_entry():
     try:
         existing_data = conn.read(ttl="0s")
@@ -68,7 +71,48 @@ with st.sidebar:
         if delete_last_entry():
             st.success("Gelöscht!")
             time.sleep(1.5)
-            st.rerun()
+            # --- NEU: ONBOARDING & LOGIN LOGIK ---
+# Wir prüfen, wer eingeloggt ist (In der Streamlit Cloud ist das st.experimental_user.email oder ein Selektor)
+# Für den Anfang nutzen wir einen einfachen Selektor in der Sidebar:
+with st.sidebar:
+    current_user = st.selectbox("👤 Nutzer wechseln", ["Bitte wählen...", "Mein Name", "Frau", "Bruder"])
+
+# Falls kein Nutzer gewählt ist oder der Nutzer neu ist:
+if current_user == "Bitte wählen...":
+    st.warning("Willkommen im Iron Hub! Bitte wähle dein Profil aus.")
+    st.stop() # Hält die App hier an, bis ein Nutzer gewählt wird
+
+# Prüfen, ob der Nutzer schon Daten hat
+user_data = data[data['Email'] == current_user] if 'Email' in data.columns else pd.DataFrame()
+
+if user_data.empty:
+    st.balloons()
+    st.header(f"Willkommen, {current_user}! 🦾")
+    st.subheader("Lass uns dein Profil einrichten:")
+    
+    with st.form("onboarding_form"):
+        start_weight = st.number_input("Dein aktuelles Startgewicht (kg)", min_value=30.0, max_value=250.0, value=80.0)
+        user_goal = st.selectbox("Dein Ziel", ["Muskelaufbau", "Fettabbau", "Kraftsteigern"])
+        
+        if st.form_submit_button("Profil speichern & Starten"):
+            # Speichere den ersten Eintrag als "Profil-Marker"
+            onboarding_entry = {
+                "Datum": str(date.today()), 
+                "Typ": "Gewicht", 
+                "Email": current_user,  # Wir nutzen hier den Namen als ID
+                "Übung/Info": f"Profil-Setup: {user_goal}", 
+                "Gewicht": start_weight, 
+                "Sätze": 0, 
+                "Wiederholungen": 0
+            }
+            if save_entry(onboarding_entry):
+                st.success("Profil erstellt! Viel Erfolg beim Training.")
+                time.sleep(1)
+                st.rerun()
+    st.stop() # Zeigt den Rest der App erst nach dem Setup
+
+# Filter die Daten für den Rest der App, damit man nur seine eigenen sieht
+data = data[data['Email'] == current_user]
 
 # --- 5. DESIGN ---
 st.markdown("""
@@ -211,3 +255,4 @@ with st.container(border=True):
 with st.expander("📂 Alle Einträge"):
     if not data.empty:
         st.dataframe(data.sort_values("Datum", ascending=False), use_container_width=True)
+
