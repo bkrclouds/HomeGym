@@ -25,6 +25,7 @@ st.markdown("""
     div[data-testid="stExpander"] { background-color: #1E2129; border-radius: 12px; border: 1px solid #333; }
     .btn-danger button {
         background: linear-gradient(135deg, #FF4B4B 0%, #AF0000 100%) !important;
+        color: white !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -127,18 +128,37 @@ ziel_w = float(user_df['Ziel'].dropna().iloc[0]) if 'Ziel' in user_df.columns an
 wasser_heute = user_df[(user_df['Typ'] == 'Wasser') & (user_df['Datum'] == str(date.today()))]['Gewicht'].sum()
 mein_plan = user_df[user_df['Typ'] == 'Plan']['Übung/Info'].unique().tolist()
 
-# SETTINGS BUTTON
+# --- 8. SETTINGS ---
 c_h1, c_h2 = st.columns([0.9, 0.1])
 if c_h2.button("⚙️"): st.session_state.show_settings = not st.session_state.show_settings
 
 if st.session_state.show_settings:
     with st.container(border=True):
         st.subheader("Einstellungen")
-        if st.button("Abmelden"): st.session_state.user = None; st.rerun()
-        if st.button("Schließen"): st.session_state.show_settings = False; st.rerun()
+        if st.button("Abmelden"): 
+            st.session_state.user = None
+            st.rerun()
+        
+        with st.expander("🛡️ Datenschutz"):
+            st.write("Deine Daten liegen sicher in deinem privaten Google Sheet. Wir speichern keine Passwörter oder persönliche Daten außerhalb deiner eigenen Tabelle.")
+        
+        with st.expander("🗑️ Account löschen"):
+            st.warning("Das löscht alle deine Einträge unwiderruflich!")
+            confirm = st.text_input("Tippe 'LÖSCHEN' zur Bestätigung:")
+            st.markdown('<div class="btn-danger">', unsafe_allow_html=True)
+            if st.button("JETZT LÖSCHEN"):
+                if confirm == "LÖSCHEN":
+                    delete_user_data(current_user)
+                    st.session_state.user = None
+                    st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+        if st.button("Schließen"): 
+            st.session_state.show_settings = False
+            st.rerun()
     st.stop()
 
-# DASHBOARD
+# --- 9. DASHBOARD ---
 st.title(f"🦾 Iron Hub: {current_user}")
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Streak", f"{streak} Tage", "🔥")
@@ -189,7 +209,7 @@ with col_r:
             save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}, current_user)
             st.session_state.selected_ex = ""; st.rerun()
 
-# 3. GEWICHTSVERLAUF
+# --- 10. GEWICHTSVERLAUF ---
 st.write("---")
 with st.container(border=True):
     st.subheader("📈 Gewichtsverlauf")
@@ -198,3 +218,5 @@ with st.container(border=True):
         fig.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color="white", margin=dict(l=0, r=0, t=20, b=0))
         fig.update_traces(line_color='#00D4FF', marker=dict(size=8))
         st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("Trage dein Gewicht an mehreren Tagen ein, um den Verlauf zu sehen.")
