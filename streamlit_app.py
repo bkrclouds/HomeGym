@@ -76,37 +76,46 @@ def get_kreatin_streak(df):
         else: break
     return streak
 
-# --- 5. LOGIN ---
+# --- 5. ÜBUNGS-DATENBANK MIT ANLEITUNGEN ---
+ÜBUNGEN = {
+    "Push": {
+        "Bankdrücken": "Flach auf die Bank legen, Augen unter der Stange. Griff etwas weiter als schulterbreit. Stange kontrolliert zur Brust führen und explosiv hochdrücken. Füße fest am Boden.",
+        "Schulterdrücken": "Aufrecht sitzen oder stehen. Hanteln auf Schulterhöhe starten. Senkrecht nach oben drücken, ohne die Ellenbogen komplett einzurasten. Bauch fest anspannen.",
+        "Dips": "An Barren stützen, Arme gestreckt. Oberkörper leicht nach vorne lehnen (fokussiert Brust). Tief gehen, bis Oberarme parallel zum Boden sind, dann kraftvoll hoch.",
+        "Seitheben": "Aufrechter Stand, Knie leicht gebeugt. Hanteln seitlich mit fast gestreckten Armen auf Schulterhöhe heben. Kleiner Finger zeigt oben leicht nach außen.",
+        "Trizeps-Drücken": "Am Kabelzug, Ellenbogen fest am Körper. Die Stange nur aus der Kraft des Trizeps nach unten drücken, bis die Arme voll gestreckt sind."
+    },
+    "Pull": {
+        "Klimmzüge": "Etwas weiter als schulterbreit greifen. Brust zur Stange ziehen, Schulterblätter aktiv nach unten und hinten ziehen. Kontrolliert ablassen.",
+        "Rudern (Sitzend)": "Rücken gerade, Beine leicht gebeugt. Griff zum Bauchnabel ziehen, Ellbogen eng am Körper führen. Kurz halten und Schultern hinten zusammenkneifen.",
+        "Latzug": "Breiter Griff, Oberkörper leicht nach hinten lehnen. Stange zur oberen Brust ziehen (nicht in den Nacken!). Fokus auf die Rückenmuskeln legen.",
+        "Bizeps-Curls": "Unterarme beugen, Oberarme bleiben starr am Körper fixiert. Handgelenke nicht einknicken. Gewicht ohne Schwung bewegen.",
+        "Facepulls": "Seil am hohen Kabelzug zum Gesicht ziehen. Hände ziehen Richtung Ohren, Ellbogen zeigen nach außen. Stärkt die hintere Schulter."
+    },
+    "Legs": {
+        "Kniebeugen": "Hüftbreiter Stand, Rücken gerade. Tief gehen, als ob man sich auf einen Stuhl setzt. Knie stabil halten (nicht nach innen knicken). Gewicht auf der Ferse.",
+        "Beinpresse": "Füße schulterbreit auf die Plattform. Drücken, aber die Knie am Ende NIE ganz durchstrecken (Verletzungsgefahr!). Kontrolliert zurückführen.",
+        "Kreuzheben": "Stange eng an den Schienbeinen. Rücken absolut gerade lassen. Kraft kommt aus den Beinen und dem unteren Rücken. Stange nah am Körper hochführen.",
+        "Wadenheben": "Auf die Zehenspitzen drücken, oben 1 Sekunde halten, dann die Ferse weit nach unten dehnen für maximale ROM."
+    }
+}
+
+# --- 6. LOGIN ---
 full_data = conn.read(ttl="1m")
 
 if st.session_state.user is None:
     st.title("🦾 Iron Hub")
     with st.container(border=True):
-        st.subheader("Willkommen zurück!")
         name_input = st.text_input("Dein Name", placeholder="Tippe deinen Namen...")
-        if st.button("Einloggen"):
-            if name_input:
-                name_clean = name_input.strip()
-                st.session_state.user = name_clean
-                st.query_params["u"] = name_clean
-                user_exists = name_clean in full_data['Email'].values if not full_data.empty else False
-                st.session_state.tutorial_done = user_exists
-                st.rerun()
-    st.stop()
-
-# --- 6. DASHBOARD DATEN ---
-current_user = st.session_state.user
-user_df = full_data[full_data['Email'] == current_user] if not full_data.empty else pd.DataFrame()
-
-if user_df.empty:
-    st.header(f"Profil-Setup 🦾")
-    with st.form("setup"):
-        c1, c2 = st.columns(2)
-        w = c1.number_input("Startgewicht (kg)", value=80.0, step=0.1); zw = c2.number_input("Zielgewicht (kg)", value=75.0, step=0.1)
-        if st.form_submit_button("Speichern"):
-            save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": "Start", "Gewicht": w, "Sätze": 0, "Wiederholungen": 0, "Ziel": zw}, current_user)
+        if st.button("Einloggen") and name_input:
+            st.session_state.user = name_input.strip()
+            st.query_params["u"] = name_input.strip()
             st.rerun()
     st.stop()
+
+# --- 7. DASHBOARD DATEN ---
+current_user = st.session_state.user
+user_df = full_data[full_data['Email'] == current_user] if not full_data.empty else pd.DataFrame()
 
 # BERECHNUNGEN
 streak = get_kreatin_streak(user_df)
@@ -118,29 +127,14 @@ last_w = float(weights_df['Gewicht'].iloc[-1]) if not weights_df.empty else 0.0
 start_w = float(weights_df['Gewicht'].iloc[0]) if not weights_df.empty else 0.0
 ziel_w = float(user_df['Ziel'].dropna().iloc[0]) if 'Ziel' in user_df.columns and not user_df['Ziel'].dropna().empty else 0.0
 wasser_heute = user_df[(user_df['Typ'] == 'Wasser') & (user_df['Datum'] == str(date.today()))]['Gewicht'].sum()
-mein_plan = user_df[user_df['Typ'] == 'Plan']['Übung/Info'].unique().tolist()
 
-# SETTINGS
-c_h1, c_h2 = st.columns([0.9, 0.1])
-if c_h2.button("⚙️"): st.session_state.show_settings = not st.session_state.show_settings
-
-if st.session_state.show_settings:
-    with st.container(border=True):
-        st.subheader("Einstellungen")
-        if st.button("Abmelden"): 
-            st.session_state.user = None
-            st.query_params.clear()
-            st.rerun()
-        if st.button("Schließen"): st.session_state.show_settings = False; st.rerun()
-    st.stop()
-
-# DASHBOARD HEADER
+# DASHBOARD
 st.title(f"🦾 Iron Hub: {current_user}")
 m1, m2, m3, m4 = st.columns(4)
-m1.metric("Kreatin-Streak", f"{streak} Tage", "🔥")
+m1.metric("Streak", f"{streak} Tage", "🔥")
 m2.metric("Gewicht", f"{last_w} kg", f"{last_w - start_w:+.1f} kg")
 m3.metric("Wasser", f"{wasser_heute} L", "💧")
-m4.metric("Zielgewicht", f"{ziel_w} kg", "🎯")
+m4.metric("Ziel", f"{ziel_w} kg", "🎯")
 st.write("---")
 
 col_l, col_r = st.columns([1, 1.8], gap="large")
@@ -154,39 +148,40 @@ with col_l:
         st.progress(min(wasser_heute / 3.0, 1.0), text=f"Wasser: {wasser_heute}L / 3L")
         if st.button("+ 0.5L Wasser"):
             save_entry({"Datum": str(date.today()), "Typ": "Wasser", "Übung/Info": "Glas", "Gewicht": 0.5, "Sätze": 0, "Wiederholungen": 0}, current_user); st.rerun()
-        
-        st.write("---")
-        st.subheader("⚖️ Gewicht loggen")
-        new_w = st.number_input("Aktuelles Gewicht", value=last_w, step=0.1)
-        if st.button("Speichern"):
-            save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": "Update", "Gewicht": new_w, "Sätze": 0, "Wiederholungen": 0}, current_user)
-            st.rerun()
 
 with col_r:
     with st.container(border=True):
         st.subheader("🏋️‍♂️ Workout Log")
-        with st.expander("📚 Katalog"):
-            tabs = st.tabs(["Push", "Pull", "Legs"])
-            katalog = {"Push": ["Bankdrücken", "Schulterdrücken"], "Pull": ["Klimmzüge", "Rudern"], "Legs": ["Kniebeugen", "Beinpresse"]}
-            for i, (cat, items) in enumerate(katalog.items()):
+        
+        with st.expander("📚 Übungs-Katalog & Anleitungen"):
+            tabs = st.tabs(list(ÜBUNGEN.keys()))
+            for i, (cat, items) in enumerate(ÜBUNGEN.items()):
                 with tabs[i]:
-                    for n in items:
-                        c1, c2 = st.columns([3, 1])
-                        c1.write(n)
-                        if c2.button("Wählen", key=f"cat_{n}"): st.session_state.selected_ex = n; st.rerun()
+                    for name, desc in items.items():
+                        c1, c2, c3 = st.columns([2, 1, 1])
+                        c1.write(f"**{name}**")
+                        if c2.button("📖 Info", key=f"info_{name}"):
+                            st.info(desc)
+                        if c3.button("Wählen", key=f"sel_{name}"):
+                            st.session_state.selected_ex = name
+                            st.rerun()
 
         u_name = st.text_input("Übung", value=st.session_state.selected_ex)
         c_kg, c_s, c_r = st.columns(3)
-        u_kg = c_kg.number_input("kg", step=2.5, value=0.0); u_s = c_s.number_input("Sätze", value=3); u_r = c_r.number_input("Reps", value=10)
+        u_kg = c_kg.number_input("kg", step=2.5, value=0.0)
+        u_s = c_s.number_input("Sätze", value=3)
+        u_r = c_r.number_input("Reps", value=10)
+        
         if st.button("🚀 SATZ SPEICHERN"):
             save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}, current_user)
             st.session_state.selected_ex = ""; st.rerun()
 
-# 3. GEWICHTSVERLAUF
+# GEWICHTSVERLAUF
 st.write("---")
 with st.container(border=True):
     st.subheader("📈 Gewichtsverlauf")
     if len(weights_df) > 1:
         fig = px.line(weights_df, x='Datum', y='Gewicht', markers=True)
         fig.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color="white")
+        fig.update_traces(line_color='#00D4FF')
         st.plotly_chart(fig, use_container_width=True)
