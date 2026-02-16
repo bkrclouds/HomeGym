@@ -6,7 +6,7 @@ import time
 import plotly.express as px
 
 # --- 1. SEITEN-SETUP & CSS ---
-st.set_page_config(page_title="Iron Hub" , page_icon="🦾", layout="wide")
+st.set_page_config(page_title="Iron Hub", page_icon="🦾", layout="wide")
 
 st.markdown("""
     <style>
@@ -23,7 +23,7 @@ st.markdown("""
         background-color: #1E2129; border-radius: 20px; padding: 25px;
         border: 2px solid #00D4FF; text-align: center; margin-bottom: 20px;
     }
-    div[data-testid="stExpander"] { background-color: #1E2129; border-radius: 12px; }
+    div[data-testid="stExpander"] { background-color: #1E2129; border-radius: 12px; border: 1px solid #333; }
     .btn-danger button {
         background: linear-gradient(135deg, #FF4B4B 0%, #AF0000 100%) !important;
     }
@@ -96,11 +96,12 @@ if st.session_state.user is None:
                 st.rerun()
     st.stop()
 
-# --- 6. TUTORIAL ---
+# --- 6. TUTORIAL (WICHTIG: KEINE LOKALEN BILDER) ---
 if not st.session_state.tutorial_done:
     st.title(f"Schön dich kennenzulernen, {st.session_state.user}!")
     with st.container():
         st.markdown('<div class="onboarding-card">', unsafe_allow_html=True)
+        # Nutze hier nur öffentliche Web-URLs für Bilder, keine lokalen Pfade!
         images = [
             "https://images.unsplash.com/photo-1594381898411-846e7d193883?q=80&w=800",
             "https://images.unsplash.com/photo-1517836357463-d25dfeac3438?q=80&w=800",
@@ -110,7 +111,7 @@ if not st.session_state.tutorial_done:
         ]
         st.image(images[st.session_state.step - 1], use_container_width=True)
         st.header(["Dein neuer Coach", "Logging", "Plan", "Kreatin", "Bereit?"][st.session_state.step-1])
-        st.write(["Begleitung bei jeder Einheit.", "Tracke in Sekunden.", "Stell dir deinen Plan zusammen.", "Verpasse nie den Streak.", "Let's Go!"][st.session_state.step-1])
+        st.write(["Begleitung bei jeder Einheit.", "Tracke in Sekunden.", "Dein Plan.", "Streak tracken.", "Let's Go!"][st.session_state.step-1])
         st.markdown('</div>', unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         if st.session_state.step > 1:
@@ -121,7 +122,7 @@ if not st.session_state.tutorial_done:
             if c2.button("STARTEN 🚀"): st.session_state.tutorial_done = True; st.rerun()
     st.stop()
 
-# --- 7. DASHBOARD LOGIK ---
+# --- 7. DASHBOARD ---
 current_user = st.session_state.user
 data = full_data[full_data['Email'] == current_user] if not full_data.empty else pd.DataFrame()
 
@@ -132,7 +133,7 @@ if data.empty:
     st.header(f"Dein Profil einrichten 🦾")
     with st.form("setup"):
         c1, c2 = st.columns(2)
-        g = c1.number_input("Größe", value=180); w = c1.number_input("Gewicht", value=80.0); zw = c2.number_input("Ziel", value=75.0)
+        g = c1.number_input("Größe (cm)", value=180); w = c1.number_input("Startgewicht (kg)", value=80.0); zw = c2.number_input("Zielgewicht (kg)", value=75.0)
         if st.form_submit_button("Profil speichern"):
             save_entry({"Datum": str(date.today()), "Typ": "Gewicht", "Übung/Info": "Start", "Gewicht": w, "Sätze": 0, "Wiederholungen": 0, "Ziel": zw}, current_user)
             st.rerun()
@@ -147,18 +148,17 @@ weights_df = weights_df.sort_values('Datum')
 last_weight = float(weights_df['Gewicht'].iloc[-1]) if not weights_df.empty else 0.0
 start_weight = float(weights_df['Gewicht'].iloc[0]) if not weights_df.empty else 0.0
 ziel_gewicht = float(data['Ziel'].dropna().iloc[0]) if 'Ziel' in data.columns and not data['Ziel'].dropna().empty else 0.0
-diff = last_weight - start_weight
 wasser_heute = data[(data['Typ'] == 'Wasser') & (data['Datum'] == str(date.today()))]['Gewicht'].sum()
 mein_plan = data[data['Typ'] == 'Plan']['Übung/Info'].unique().tolist()
 
-# --- HEADER & SETTINGS ---
+# SETTINGS BUTTON
 c_h1, c_h2 = st.columns([0.9, 0.1])
 if c_h2.button("⚙️"): st.session_state.show_settings = not st.session_state.show_settings
 
 if st.session_state.show_settings:
     with st.container(border=True):
         if st.button("Abmelden"): st.session_state.user = None; st.rerun()
-        confirm = st.text_input("Löschen bestätigen mit 'LÖSCHEN'")
+        confirm = st.text_input("Account löschen? Tippe 'LÖSCHEN'")
         st.markdown('<div class="btn-danger">', unsafe_allow_html=True)
         if st.button("KONTO LÖSCHEN"):
             if confirm == "LÖSCHEN": delete_user_data(current_user); st.session_state.user = None; st.rerun()
@@ -166,26 +166,16 @@ if st.session_state.show_settings:
         if st.button("Schließen"): st.session_state.show_settings = False; st.rerun()
     st.stop()
 
-# --- UI DASHBOARD ---
+# DASHBOARD HEADER
 st.title(f"🦾 Iron Hub: {current_user}")
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("Kreatin-Streak", f"{streak} Tage", "🔥")
-m2.metric("Gewicht", f"{last_weight} kg", f"{diff:.1f} kg")
+m2.metric("Gewicht", f"{last_weight} kg", f"{last_weight - start_weight:.1f} kg")
 m3.metric("Wasser", f"{wasser_heute} L", "💧")
 m4.metric("Ziel", f"{ziel_gewicht} kg", "🎯")
-
 st.write("---")
 
-# --- GEWICHTS-DASHBOARD (GRAFIK) ---
-with st.expander("📈 Gewichtsverlauf & Statistik", expanded=True):
-    if not weights_df.empty:
-        fig = px.line(weights_df, x='Datum', y='Gewicht', title="Dein Weg zum Ziel", markers=True)
-        fig.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
-        fig.update_traces(line_color='#00D4FF')
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("Noch keine Gewichtsdaten vorhanden.")
-
+# 1. DAILY HABITS & 2. WORKOUT LOG
 col_l, col_r = st.columns([1, 1.8], gap="large")
 
 with col_l:
@@ -204,19 +194,12 @@ with col_l:
             if new_w < last_weight: st.session_state.trigger_snow = True
             st.rerun()
 
-    with st.container(border=True):
-        st.subheader("📋 Mein Plan")
-        for ex in mein_plan:
-            cl1, cl2 = st.columns([4,1])
-            if cl1.button(f"🏋️ {ex}", key=f"pl_{ex}"): st.session_state.selected_ex = ex; st.rerun()
-            if cl2.button("❌", key=f"rm_{ex}"): st.rerun()
-
 with col_r:
     with st.container(border=True):
         st.subheader("🏋️‍♂️ Workout Log")
-        with st.expander("📚 Katalog"):
+        with st.expander("📚 Übungs-Katalog"):
             tabs = st.tabs(["Push", "Pull", "Legs"])
-            katalog = {"Push": ["Bankdrücken", "Schulterdrücken", "Dips"], "Pull": ["Klimmzüge", "Rudern", "Latzug"], "Legs": ["Kniebeugen", "Beinpresse"]}
+            katalog = {"Push": ["Bankdrücken", "Schulterdrücken"], "Pull": ["Klimmzüge", "Rudern"], "Legs": ["Kniebeugen", "Beinpresse"]}
             for i, (cat, items) in enumerate(katalog.items()):
                 with tabs[i]:
                     for n in items:
@@ -233,3 +216,12 @@ with col_r:
             save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}, current_user)
             st.session_state.selected_ex = ""; st.rerun()
 
+# 3. GEWICHTSVERLAUF (GANZ UNTEN)
+st.write("---")
+with st.container(border=True):
+    st.subheader("📈 Gewichtsverlauf & Statistik")
+    if not weights_df.empty:
+        fig = px.line(weights_df, x='Datum', y='Gewicht', title="Dein Weg zum Ziel", markers=True)
+        fig.update_layout(template="plotly_dark", plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)', font_color="white")
+        fig.update_traces(line_color='#00D4FF')
+        st.plotly_chart(fig, use_container_width=True)
