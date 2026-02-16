@@ -6,7 +6,7 @@ import time
 import plotly.express as px
 
 # --- 1. SEITEN-SETUP & CSS ---
-st.set_page_config(page_title="Iron Hub 2.0", page_icon="🦾", layout="wide")
+st.set_page_config(page_title="Iron Hub" , page_icon="🦾", layout="wide")
 
 st.markdown("""
     <style>
@@ -232,3 +232,4 @@ with col_r:
         if st.button("🚀 SATZ SPEICHERN"):
             save_entry({"Datum": str(date.today()), "Typ": "Training", "Übung/Info": u_name, "Gewicht": u_kg, "Sätze": u_s, "Wiederholungen": u_r}, current_user)
             st.session_state.selected_ex = ""; st.rerun()
+
